@@ -1,0 +1,23 @@
+{
+  "name": "popstars",
+  "private": false,
+  "version": "1.0.0",
+  "author": "Z",
+  "keywords": [
+    "H5 Game",
+    "popstars"
+  ],
+  "description": "A simple game",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^4.4.5"
+  },
+  "dependencies": {
+    "pixi.js": "^7.3.1"
+  }
+}
