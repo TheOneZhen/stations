@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@types/three": "^0.157.2",
-    "three": "^0.157.0"
+    "three": "^0.157.0",
+    "three-bas": "^3.0.0"
   }
 }
