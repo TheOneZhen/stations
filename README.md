@@ -9,3 +9,4 @@ This is a personal repo for code sharing only.
 # todo list
 
 - github action
+- changelog
