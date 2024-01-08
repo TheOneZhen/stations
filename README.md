@@ -1,7 +1,11 @@
-# 仓库介绍
+# stations
 
-为了解决个人网站（主站）部署与维护压力、源码分享、现成demo环境等问题，分流开发内容至本仓库，同时仓库本身也作为共享内容跟开源。
+This is a personal repo for code sharing only.
 
-# todo流程
+这是一个仅用于代码分享的个人仓库。
 
-todo内各类分析在子应用上线之后会迁移到子应用`READNE.md`中
+<img src="./intro%20image/site%20arch.png" alt="site arch" />
+
+# todo list
+
+- github action
