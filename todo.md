@@ -20,3 +20,9 @@ webpack或vite等打包工具性能图解
 使用爬虫获取热点新闻，检索新闻地址，并展示到前端显示的地图上
 
 # 一个浏览器截屏的插件
+
+# 破格排版工具
+
+# privateGPT
+
+# Animated Signature
