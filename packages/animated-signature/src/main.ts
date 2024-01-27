@@ -2,7 +2,7 @@ import AnimatedSignature from './dist/AnimatedSignature'
 
 const app = document.getElementById('app')
 const canvas = document.createElement('canvas')
-canvas.style.width
+
 const animatedSignature = new AnimatedSignature(canvas, {
   duration: [1000, 1000],
   drawingMode: 'parallel',
