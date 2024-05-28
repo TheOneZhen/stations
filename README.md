@@ -1,13 +1,14 @@
-# stations
+# 学习目的
 
-This is a personal repo for code sharing only.
+1. 掌握前端工程化，掌握vite、webepack工具的使用
+2. 掌握react，使用react构建成熟应用
+3. 掌握跨端开发，掌握electron工具的使用
+4. 掌握测试环节
+5. 前言技术探索
+   1. monorepo
 
-这是一个仅用于代码分享的个人仓库。
+# 开发内容
 
-<img src="./intro%20image/site%20arch.png" alt="site arch" />
+使用过react实现一个甘特图，支持数据CURD。
 
-# todo list
-
-- github action
-- changelog
-- 
+最后打包成为各个平台可以使用的可执行程序。
