@@ -1,0 +1,15 @@
+{
+  "name": "koa-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./lib/application.js",
+  "scripts": {
+    "dev": "deno run --unstable-sloppy-imports --allow-net ./src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "koa": "^2.15.3"
+  }
+}
