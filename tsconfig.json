@@ -21,9 +21,7 @@
     "lib": ["esnext", "dom"],
     "types": ["node"],
     "rootDir": ".",
-    "paths": {
-      "@shared": ["packages/shared"]
-    }
+    "paths": {}
   },
   "include": ["packages/*/src", "packages/*/typing/*.d.ts"]
 }

@@ -1,3 +1,0 @@
-window.onhashchange = function (event) {
-
-}
