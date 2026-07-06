@@ -8,7 +8,7 @@ on:
       - '.github/workflows/3d-image-transition-ci.yml'
   push:
     branches:
-      - main
+      - master
     paths:
       - 'packages/3d-image-transition/**'
       - 'pnpm-lock.yaml'
