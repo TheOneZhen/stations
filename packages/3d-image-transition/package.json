@@ -4,6 +4,18 @@
   "description": "Image transition redo for https://redstapler.co/10-stunning-css-3d-effect-must-see/",
   "type": "module",
   "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./vue": "./src/vue/index.ts"
+  },
+  "peerDependencies": {
+    "vue": "^3.4.0"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -27,6 +39,7 @@
     "jsdom": "^25.0.1",
     "typescript": "^5.8.3",
     "vite": "^5.4.11",
-    "vitest": "^2.1.6"
+    "vitest": "^2.1.6",
+    "vue": "^3.5.13"
   }
 }
