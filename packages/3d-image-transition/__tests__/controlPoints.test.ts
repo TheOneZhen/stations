@@ -3,6 +3,8 @@ import {
   computeBezierControls,
   getControlPoint0,
   getControlPoint1,
+  addVec3,
+  subVec3,
 } from '../src/core/controlPoints';
 import { createSeededRandomSource } from '../src/core/randomSource';
 
@@ -42,5 +44,13 @@ describe('controlPoints', () => {
     expect(inControls.end).toEqual(centroid);
     expect(inControls.control0.x).toBeLessThan(centroid.x);
     expect(outControls.control0.x).toBeGreaterThan(centroid.x);
+  });
+
+  it('adds and subtracts vec3 components', () => {
+    const a = { x: 1, y: 2, z: 3 };
+    const b = { x: 4, y: 5, z: 6 };
+
+    expect(addVec3(a, b)).toEqual({ x: 5, y: 7, z: 9 });
+    expect(subVec3(b, a)).toEqual({ x: 3, y: 3, z: 3 });
   });
 });

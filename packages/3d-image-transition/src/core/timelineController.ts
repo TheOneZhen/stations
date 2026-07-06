@@ -16,6 +16,10 @@ export interface TimelineController {
   dispose: () => void;
 }
 
+/**
+ * Wraps a GSAP timeline that drives uTime on the slide meshes. The timeline
+ * animates a proxy "time" value from 0 to totalDuration over tweenDuration.
+ */
 export function createTimelineController(
   options: TimelineControllerOptions,
 ): TimelineController {
@@ -84,6 +88,7 @@ export function createTimelineController(
   };
 }
 
+/** Binds mouse/touch drag on target to timeline scrubbing (mirrors original demo). */
 export function attachScrubListeners(
   controller: TimelineController,
   target: HTMLElement | Window = window,

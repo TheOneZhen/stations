@@ -19,6 +19,7 @@ float easeInOutCubic(float t) {
 }
 `;
 
+/** Vertex shader: scale face from centroid, then offset along a cubic-Bezier path. */
 export function createSlideVertexShader(phase: AnimationPhase): string {
   const scaleExpr = phase === 'in' ? 'tProgress' : '1.0 - tProgress';
 

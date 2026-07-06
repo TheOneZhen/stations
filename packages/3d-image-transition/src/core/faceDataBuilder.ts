@@ -18,6 +18,7 @@ function computeCentroid(a: Vec3, b: Vec3, c: Vec3): Vec3 {
   };
 }
 
+/** Expresses a world-space vertex relative to its face centroid (for GPU scaling). */
 function toLocal(vertex: Vec3, centroid: Vec3): Vec3 {
   return {
     x: vertex.x - centroid.x,
@@ -26,6 +27,10 @@ function toLocal(vertex: Vec3, centroid: Vec3): Vec3 {
   };
 }
 
+/**
+ * Subdivides the slide plane into a grid. UVs match Three.js PlaneGeometry
+ * (v=0 at bottom, v=1 at top) so textures with flipY=true render upright.
+ */
 function buildGridVertices(
   width: number,
   height: number,
@@ -46,7 +51,7 @@ function buildGridVertices(
         y: v * height - halfH,
         z: 0,
       });
-      uvs.push({ x: u, y: 1 - v });
+      uvs.push({ x: u, y: v });
     }
   }
 
@@ -57,6 +62,10 @@ function getVertexIndex(x: number, y: number, widthSegments: number): number {
   return y * (widthSegments + 1) + x;
 }
 
+/**
+ * Tessellates the slide plane into animated triangle faces. Each quad is split
+ * into two triangles; every face carries its own delay, Bezier path, and UVs.
+ */
 export function buildSlideFaces(
   config: SlideGridConfig,
   random: RandomSource = createMathRandomSource(),

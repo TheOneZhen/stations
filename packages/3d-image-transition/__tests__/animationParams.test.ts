@@ -64,4 +64,10 @@ describe('animationParams', () => {
     expect(clamp(-1, 0, 1)).toBe(0);
     expect(clamp(0.5, 0, 1)).toBe(0.5);
   });
+
+  it('maps values linearly across ranges', () => {
+    expect(mapLinear(5, 0, 10, 0, 100)).toBe(50);
+    expect(mapLinear(-50, -50, 50, 0, 1)).toBe(0);
+    expect(mapLinear(50, -50, 50, 0, 1)).toBe(1);
+  });
 });

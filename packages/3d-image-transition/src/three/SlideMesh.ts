@@ -3,6 +3,10 @@ import { buildSlideFaces } from '../core/faceDataBuilder';
 import { createSlideGeometry, createSlideMaterial } from './createSlideGeometry';
 import type { AnimationPhase, ImageSource } from '../types';
 
+/**
+ * One animated slide layer ("in" or "out"). The plane is subdivided into
+ * many triangles, each deformed independently in the vertex shader.
+ */
 export class SlideMesh extends Mesh {
   readonly totalDuration: number;
 
@@ -49,6 +53,7 @@ export class SlideMesh extends Mesh {
   }
 }
 
+/** Converts File/Blob sources to a temporary object URL for TextureLoader. */
 function resolveImageUrl(source: ImageSource): { url: string; revoke?: () => void } {
   if (typeof source === 'string') {
     return { url: source };
@@ -62,6 +67,10 @@ function shouldSetCrossOrigin(url: string): boolean {
   return /^https?:\/\//i.test(url);
 }
 
+/**
+ * Loads an image texture from an HTTP(S) URL, data URL, File, or Blob.
+ * flipY is enabled to match PlaneGeometry-style UVs.
+ */
 export function loadTexture(source: ImageSource): Promise<Texture> {
   const { url, revoke } = resolveImageUrl(source);
   const loader = new TextureLoader();
@@ -75,6 +84,7 @@ export function loadTexture(source: ImageSource): Promise<Texture> {
       url,
       (texture) => {
         revoke?.();
+        texture.flipY = true;
         resolve(texture);
       },
       undefined,

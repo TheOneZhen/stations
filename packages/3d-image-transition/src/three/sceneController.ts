@@ -17,6 +17,11 @@ import {
 import { loadTexture, SlideMesh } from './SlideMesh';
 import type { ImageSource, SceneControllerOptions } from '../types';
 
+/**
+ * Owns the Three.js renderer, camera, dual slide meshes, GSAP timeline,
+ * and optional scrub interaction. Use {@link SceneController.create} to
+ * instantiate and {@link SceneController.dispose} to tear down.
+ */
 export class SceneController {
   readonly renderer: WebGLRenderer;
   readonly scene: Scene;
@@ -73,6 +78,7 @@ export class SceneController {
     this.tick();
   }
 
+  /** Builds renderer, meshes, timeline, and scrub listeners inside container. */
   static async create(
     container: HTMLElement,
     options: SceneControllerOptions,
@@ -143,6 +149,7 @@ export class SceneController {
     return controller;
   }
 
+  /** Swaps the texture on both slide meshes (supports URL, data URL, File, Blob). */
   async setImage(image: ImageSource): Promise<void> {
     const texture = await loadTexture(image);
     this.texture?.dispose();

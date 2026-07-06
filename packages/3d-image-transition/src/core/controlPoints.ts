@@ -1,5 +1,6 @@
 import type { RandomSource, Vec3 } from '../types';
 
+/** First Bezier handle offset; Y sign follows the face centroid quadrant. */
 export function getControlPoint0(centroid: Vec3, random: RandomSource): Vec3 {
   const signY = Math.sign(centroid.y) || 1;
 
@@ -10,6 +11,7 @@ export function getControlPoint0(centroid: Vec3, random: RandomSource): Vec3 {
   };
 }
 
+/** Second Bezier handle offset; Y is inverted relative to control0. */
 export function getControlPoint1(centroid: Vec3, random: RandomSource): Vec3 {
   const signY = Math.sign(centroid.y) || 1;
 
@@ -28,6 +30,10 @@ export function subVec3(a: Vec3, b: Vec3): Vec3 {
   return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
 }
 
+/**
+ * Builds cubic-Bezier path endpoints for a face. "in" faces pull control
+ * points inward (subtract); "out" faces push them outward (add).
+ */
 export function computeBezierControls(
   centroid: Vec3,
   phase: 'in' | 'out',

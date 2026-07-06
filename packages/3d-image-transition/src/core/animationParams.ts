@@ -7,6 +7,7 @@ import {
 } from './constants';
 import type { AnimationPhase, RandomSource, Vec3 } from '../types';
 
+/** Maps a value from one numeric range to another (linear interpolation). */
 export function mapLinear(
   value: number,
   inMin: number,
@@ -21,6 +22,7 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+/** Upper bound used by the GSAP timeline so every face can finish animating. */
 export function computeTotalDuration(): number {
   return MAX_DURATION + MAX_DELAY_X + MAX_DELAY_Y + STRETCH;
 }
@@ -30,6 +32,10 @@ export interface FaceAnimationParams {
   duration: number;
 }
 
+/**
+ * Per-triangle timing: horizontal position drives delayX, vertical position
+ * drives delayY with opposite direction for "in" vs "out" phases.
+ */
 export function computeFaceAnimationParams(
   centroid: Vec3,
   width: number,

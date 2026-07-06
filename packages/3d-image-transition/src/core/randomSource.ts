@@ -1,3 +1,4 @@
+/** Non-deterministic RNG backed by Math.random (runtime animation). */
 export function createMathRandomSource(): import('../types').RandomSource {
   return {
     random: () => Math.random(),
@@ -6,6 +7,7 @@ export function createMathRandomSource(): import('../types').RandomSource {
   };
 }
 
+/** Deterministic LCG RNG for reproducible tests and snapshots. */
 export function createSeededRandomSource(seed: number): import('../types').RandomSource {
   let state = seed >>> 0;
 

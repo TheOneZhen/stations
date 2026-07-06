@@ -9,6 +9,7 @@ import type { FaceAnimationData } from '../types';
 import { createSlideVertexShader, SLIDE_FRAGMENT_SHADER } from './shaders';
 import type { AnimationPhase } from '../types';
 
+/** Packs per-face animation data into non-indexed BufferGeometry attributes. */
 export function createSlideGeometry(faces: FaceAnimationData[]): BufferGeometry {
   const vertexCount = faces.length * 3;
   const positions = new Float32Array(vertexCount * 3);
