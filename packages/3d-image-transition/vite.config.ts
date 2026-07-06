@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react(), vue()],
   root: "demo",
   build: {
-    outDir: "../dist",
+    outDir: "../dist-demo",
     emptyOutDir: true,
   },
 });
