@@ -20,6 +20,22 @@
       "import": "./dist/vue.js"
     }
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheOneZhen/stations",
+    "directory": "packages/3d-image-transition"
+  },
+  "bugs": {
+    "url": "https://github.com/TheOneZhen/stations/issues"
+  },
+  "keywords": [
+    "three.js",
+    "webgl",
+    "image-transition",
+    "react",
+    "vue",
+    "gsap"
+  ],
   "scripts": {
     "dev": "vite",
     "build:lib": "vite build --config vite.lib.config.ts",
@@ -29,7 +45,6 @@
     "test": "vitest run",
     "preview": "vite preview"
   },
-  "keywords": [],
   "author": "",
   "license": "ISC",
   "publishConfig": {
