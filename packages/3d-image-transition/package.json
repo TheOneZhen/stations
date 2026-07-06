@@ -1,5 +1,5 @@
 {
-  "name": "3d-image-transition",
+  "name": "@zhenisbusy/3d-image-transition",
   "version": "1.0.0",
   "description": "Image transition redo for https://codepen.io/zadvorsky/pen/PNXbGo",
   "type": "module",
@@ -25,12 +25,16 @@
     "build:lib": "vite build --config vite.lib.config.ts",
     "build:demo": "vite build",
     "build": "pnpm build:lib && pnpm build:demo",
+    "prepublishOnly": "pnpm build:lib",
     "test": "vitest run",
     "preview": "vite preview"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "gsap": "^3.12.5",
     "react": "^18.0.0",
