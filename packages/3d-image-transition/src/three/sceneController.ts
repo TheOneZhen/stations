@@ -15,7 +15,7 @@ import {
   REPEAT_DELAY,
 } from '../core/constants';
 import { loadTexture, SlideMesh } from './SlideMesh';
-import type { SceneControllerOptions } from '../types';
+import type { ImageSource, SceneControllerOptions } from '../types';
 
 export class SceneController {
   readonly renderer: WebGLRenderer;
@@ -80,14 +80,14 @@ export class SceneController {
     const {
       width,
       height,
-      imageUrl,
+      image,
       autoplay = true,
       enableScrub = true,
       fov = DEFAULT_FOV,
       antialias = window.devicePixelRatio === 1,
     } = options;
 
-    const texture = await loadTexture(imageUrl);
+    const texture = await loadTexture(image);
 
     const renderer = new WebGLRenderer({
       antialias,
@@ -143,8 +143,8 @@ export class SceneController {
     return controller;
   }
 
-  async setImageUrl(imageUrl: string): Promise<void> {
-    const texture = await loadTexture(imageUrl);
+  async setImage(image: ImageSource): Promise<void> {
+    const texture = await loadTexture(image);
     this.texture?.dispose();
     this.texture = texture;
     this.slideOut.setTexture(texture);

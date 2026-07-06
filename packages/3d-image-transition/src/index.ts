@@ -20,6 +20,7 @@ export {
 } from './core/timelineController';
 export type {
   AnimationPhase,
+  ImageSource,
   ImageTransitionProps,
   FaceAnimationData,
   SlideGridConfig,

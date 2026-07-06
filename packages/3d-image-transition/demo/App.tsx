@@ -6,7 +6,7 @@ const SAMPLE_IMAGE =
 export function App() {
   return (
     <ImageTransition
-      imageUrl={SAMPLE_IMAGE}
+      image={SAMPLE_IMAGE}
       width={100}
       height={60}
       autoplay

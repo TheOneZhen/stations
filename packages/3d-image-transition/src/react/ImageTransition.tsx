@@ -6,7 +6,7 @@ import { useImageTransition } from './useImageTransition';
 import type { ImageTransitionProps } from '../types';
 
 export function ImageTransition({
-  imageUrl,
+  image,
   width = DEFAULT_SLIDE_WIDTH,
   height = DEFAULT_SLIDE_HEIGHT,
   autoplay = true,
@@ -14,7 +14,7 @@ export function ImageTransition({
   className,
 }: ImageTransitionProps) {
   const containerRef = useImageTransition({
-    imageUrl,
+    image,
     width,
     height,
     autoplay,

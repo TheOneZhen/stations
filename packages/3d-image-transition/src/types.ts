@@ -42,10 +42,13 @@ export interface RandomSource {
   randFloatSpread: (range: number) => number;
 }
 
+/** HTTP(S) URL, data URL, or a local File/Blob */
+export type ImageSource = string | File | Blob;
+
 export interface SceneControllerOptions {
   width: number;
   height: number;
-  imageUrl: string;
+  image: ImageSource;
   autoplay?: boolean;
   enableScrub?: boolean;
   fov?: number;
@@ -53,7 +56,7 @@ export interface SceneControllerOptions {
 }
 
 export interface ImageTransitionProps {
-  imageUrl: string;
+  image: ImageSource;
   width?: number;
   height?: number;
   autoplay?: boolean;

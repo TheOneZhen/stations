@@ -1,7 +1,7 @@
 import { Mesh, ShaderMaterial, Texture, TextureLoader } from 'three';
 import { buildSlideFaces } from '../core/faceDataBuilder';
 import { createSlideGeometry, createSlideMaterial } from './createSlideGeometry';
-import type { AnimationPhase } from '../types';
+import type { AnimationPhase, ImageSource } from '../types';
 
 export class SlideMesh extends Mesh {
   readonly totalDuration: number;
@@ -49,11 +49,39 @@ export class SlideMesh extends Mesh {
   }
 }
 
-export function loadTexture(url: string): Promise<Texture> {
+function resolveImageUrl(source: ImageSource): { url: string; revoke?: () => void } {
+  if (typeof source === 'string') {
+    return { url: source };
+  }
+
+  const url = URL.createObjectURL(source);
+  return { url, revoke: () => URL.revokeObjectURL(url) };
+}
+
+function shouldSetCrossOrigin(url: string): boolean {
+  return /^https?:\/\//i.test(url);
+}
+
+export function loadTexture(source: ImageSource): Promise<Texture> {
+  const { url, revoke } = resolveImageUrl(source);
   const loader = new TextureLoader();
-  loader.setCrossOrigin('anonymous');
+
+  if (shouldSetCrossOrigin(url)) {
+    loader.setCrossOrigin('anonymous');
+  }
 
   return new Promise((resolve, reject) => {
-    loader.load(url, resolve, undefined, reject);
+    loader.load(
+      url,
+      (texture) => {
+        revoke?.();
+        resolve(texture);
+      },
+      undefined,
+      (error) => {
+        revoke?.();
+        reject(error);
+      },
+    );
   });
 }
