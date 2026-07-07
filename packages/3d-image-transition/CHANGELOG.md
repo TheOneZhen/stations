@@ -1,5 +1,11 @@
 # @zhenisbusy/3d-image-transition
 
+## 1.0.3
+
+### Patch Changes
+
+- 0edf374: bug: release
+
 ## 1.0.2
 
 ### Patch Changes
