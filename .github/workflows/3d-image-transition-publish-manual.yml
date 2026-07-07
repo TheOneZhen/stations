@@ -28,7 +28,6 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-          registry-url: https://registry.npmjs.org
 
       - name: Upgrade npm for trusted publishing
         run: npm install -g npm@latest
@@ -41,6 +40,17 @@ jobs:
 
       - name: Build library
         run: pnpm --filter 3d-image-transition build:lib
+
+      - name: Configure npm for trusted publishing
+        run: |
+          npmrc_path="${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
+          for file in "$npmrc_path" "$HOME/.npmrc"; do
+            if [ -f "$file" ]; then
+              sed -i '/_authToken/d' "$file"
+              sed -i '/always-auth/d' "$file"
+            fi
+          done
+          npm config delete //registry.npmjs.org/:_authToken 2>/dev/null || true
 
       - name: Publish to npm
         working-directory: packages/3d-image-transition
