@@ -11,7 +11,7 @@ const stationsPath = "stations";
 
 export default defineConfig({
   plugins: [react(), vue()],
-  base: `/${stationsPath}/${packageName}/`,
+  base: `/${packageName}/`,
   root: "demo",
   build: {
     outDir: path.join(repoRoot, "dist", stationsPath, packageName),
