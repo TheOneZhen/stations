@@ -5,7 +5,8 @@
   "type": "module",
   "sideEffects": false,
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -39,8 +40,7 @@
   "scripts": {
     "dev": "vite",
     "build:lib": "vite build --config vite.lib.config.ts",
-    "build:demo": "vite build",
-    "build": "pnpm build:lib && pnpm build:demo",
+    "build:station": "vite build",
     "prepublishOnly": "pnpm build:lib",
     "test": "vitest run",
     "preview": "vite preview"

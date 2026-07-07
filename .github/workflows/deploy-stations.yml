@@ -1,0 +1,81 @@
+name: Deploy stations
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/deploy-stations.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: stations-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build & deploy stations
+    runs-on: ubuntu-latest
+
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+      DEPLOY_PATH: /www/stations
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install, test & build stations
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter "./packages/**" --if-present test
+          pnpm build:stations
+          test -d dist/stations || (echo "stations build output missing" && exit 1)
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known_hosts
+        run: ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Prepare deploy directory
+        run: |
+          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+            "sudo mkdir -p '$DEPLOY_PATH' && sudo chown -R \"\$USER:\$USER\" '$DEPLOY_PATH'"
+
+      - name: Upload stations to server
+        run: |
+          rsync -avz --delete \
+            -e "ssh -p $SSH_PORT" \
+            dist/stations/ \
+            "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
+
+      - name: Reload nginx
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            if command -v nginx >/dev/null 2>&1; then
+              sudo nginx -t && sudo nginx -s reload
+            fi
