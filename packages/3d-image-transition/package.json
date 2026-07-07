@@ -1,6 +1,6 @@
 {
   "name": "@zhenisbusy/3d-image-transition",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Image transition redo for https://codepen.io/zadvorsky/pen/PNXbGo",
   "type": "module",
   "sideEffects": false,
