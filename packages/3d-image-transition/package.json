@@ -48,7 +48,8 @@
   "author": "",
   "license": "ISC",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "peerDependencies": {
     "gsap": "^3.12.5",
