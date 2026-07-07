@@ -1,5 +1,11 @@
 # @zhenisbusy/3d-image-transition
 
+## 1.0.2
+
+### Patch Changes
+
+- 54b13a4: modify npm FA to OIDC
+
 ## 1.0.1
 
 ### Patch Changes
