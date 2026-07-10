@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Clipboard Image Paste: Run Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-clipboard-image-paste"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/packages/vscode-clipboard-image-paste/dist/**/*.js"
+      ],
+      "preLaunchTask": "clipboard-image-paste: compile"
+    }
+  ]
+}
