@@ -6,9 +6,11 @@
     "source.fixAll.eslint": "explicit",
     "source.organizeImports": "never"
   },
+  "eslint.enable": true,
   "eslint.format.enable": true,
+  "eslint.useFlatConfig": true,
   "eslint.codeActionsOnSave.mode": "problems",
-  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "eslint.workingDirectories": [{ "directory": ".", "!cwd": true }],
   "eslint.rules.customizations": [
     { "rule": "style/*", "severity": "off", "fixable": true },
     { "rule": "format/*", "severity": "off", "fixable": true },
