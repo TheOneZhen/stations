@@ -22,8 +22,13 @@
   "author": "Z",
   "license": "ISC",
   "devDependencies": {
+    "@antfu/eslint-config": "catalog:",
     "@changesets/cli": "^2.26.2",
-    "@types/node": "^20.8.2",
-    "typescript": "^6.0.3"
+    "@types/node": "catalog:",
+    "esbuild": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-format": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
