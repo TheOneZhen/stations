@@ -18,5 +18,6 @@ export default antfu({
     'no-console': 'off',
     'import/no-mutable-exports': 'off',
     'antfu/no-top-level-await': 'off',
+    'ts/explicit-function-return-type': 'off',
   },
 })
