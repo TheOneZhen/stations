@@ -2,6 +2,17 @@
   "name": "stations",
   "version": "1.0.0",
   "description": "Some demos of zhenisbusy-site, can runned in other env on one's own.",
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ]
+  },
+  "author": "Z",
+  "license": "ISC",
+  "keywords": [
+    "demo",
+    "front-end"
+  ],
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -10,24 +21,15 @@
     "release": "node scripts/publish-with-npm.mjs",
     "build:stations": "pnpm --filter \"./packages/**\" --if-present run build:station"
   },
-  "keywords": [
-    "demo",
-    "front-end"
-  ],
-  "workspaces": {
-    "packages": [
-      "packages/*"
-    ]
-  },
-  "author": "Z",
-  "license": "ISC",
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
     "@changesets/cli": "^2.26.2",
     "@types/node": "catalog:",
+    "dayjs": "catalog:",
     "esbuild": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-format": "catalog:",
+    "lodash-es": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
