@@ -1,8 +1,6 @@
 import * as vscode from 'vscode'
-import { name as extensionName } from '../package.json'
+import { extensionName, pasteCommand } from './core/constant'
 import { Logger } from './core/logger'
-
-const pasteCommand = `extension.${extensionName}`
 
 export function activate(context: vscode.ExtensionContext): void {
   // create Logger channel

@@ -72,7 +72,8 @@
     "package": "vsce package --no-dependencies"
   },
   "dependencies": {
-    "dayjs": "^1.11.13"
+    "dayjs": "catalog:",
+    "sanitize-filename": "^1.6.4"
   },
   "devDependencies": {
     "@types/node": "catalog:",
