@@ -1,23 +1,26 @@
-import * as vscode from "vscode";
-import { pasteImageCommand } from "./commands/pasteImage";
-import { createClipboardBridge } from "./clipboard/webviewBridge";
+import * as vscode from 'vscode'
+import { name as extensionName } from '../package.json'
+import { Logger } from './core/logger'
 
-let clipboardBridge: ReturnType<typeof createClipboardBridge> | undefined;
+const pasteCommand = `extension.${extensionName}`
 
 export function activate(context: vscode.ExtensionContext): void {
-  clipboardBridge = createClipboardBridge(context);
+  // create Logger channel
+  Logger.channel = vscode.window.createOutputChannel(extensionName)
+  // add Logger channel to context subscriptions
+  context.subscriptions.push(Logger.channel)
+  Logger.log(`[${extensionName}] activated!`)
 
-  context.subscriptions.push(
-    vscode.commands.registerCommand("clipboardImagePaste.paste", async () => {
-      if (!clipboardBridge) {
-        clipboardBridge = createClipboardBridge(context);
-      }
-      await pasteImageCommand(clipboardBridge);
-    }),
-  );
-}
+  const dispose = vscode.commands.registerCommand(pasteCommand, async () => {
+    try {
+      Logger.log(`[${extensionName}] paste command executed!`)
+    }
+    catch (error) {
+      Logger.showErrorMessage(`[${extensionName}] paste failed: ${error}`)
+    }
+  })
 
-export function deactivate(): void {
-  clipboardBridge?.dispose();
-  clipboardBridge = undefined;
+  context.subscriptions.push(dispose)
 }
+/// TODO
+export function deactivate(): void {}

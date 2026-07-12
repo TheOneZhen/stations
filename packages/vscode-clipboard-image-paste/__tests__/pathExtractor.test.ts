@@ -1,44 +1,36 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest'
 import {
-  extractImagePathPattern,
+  buildInsertText,
   PathExtractionError,
-  replaceImagePathInTemplate,
-} from "../src/template/pathExtractor";
+  validateLanguageTemplate,
+} from '../src/template/pathExtractor'
 
-describe("extractImagePathPattern", () => {
-  it("extracts markdown image path", () => {
+describe('buildInsertText', () => {
+  it('replaces dirname and filename placeholders', () => {
     expect(
-      extractImagePathPattern(
-        "![altText](./images/[YYYY-MM-DD])",
-        "markdown",
+      buildInsertText(
+        '![altText]([dirname]/[filename])',
+        './images/',
+        '2026-07-09.png',
       ),
-    ).toBe("./images/[YYYY-MM-DD]");
-  });
+    ).toBe('![altText](./images/2026-07-09.png)')
+  })
 
-  it("extracts html src path", () => {
+  it('replaces html template placeholders', () => {
     expect(
-      extractImagePathPattern(
-        '<img alt="altText" src="./images/[YYYY-MM-DD]" />',
-        "html",
+      buildInsertText(
+        '<img alt="altText" src="[dirname]/[filename]" />',
+        './images/',
+        '2026-07-09.png',
       ),
-    ).toBe("./images/[YYYY-MM-DD]");
-  });
+    ).toBe('<img alt="altText" src="./images/2026-07-09.png" />')
+  })
+})
 
-  it("throws when markdown path is missing", () => {
+describe('validateLanguageTemplate', () => {
+  it('throws when required fields are missing', () => {
     expect(() =>
-      extractImagePathPattern("# heading", "markdown"),
-    ).toThrow(PathExtractionError);
-  });
-});
-
-describe("replaceImagePathInTemplate", () => {
-  it("replaces markdown path with resolved reference", () => {
-    expect(
-      replaceImagePathInTemplate(
-        "![altText](./images/[YYYY-MM-DD])",
-        "markdown",
-        "./images/2026-07-09.png",
-      ),
-    ).toBe("![altText](./images/2026-07-09.png)");
-  });
-});
+      validateLanguageTemplate({ dirname: './images/' }, 'markdown'),
+    ).toThrow(PathExtractionError)
+  })
+})
