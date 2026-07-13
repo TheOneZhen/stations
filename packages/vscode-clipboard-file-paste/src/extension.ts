@@ -1,3 +1,9 @@
+/**
+ * Extension entry point.
+ *
+ * Registers the paste command and routes failures to the output channel.
+ * Manifest entries (commands, keybindings, configuration) live in `package.json`.
+ */
 import * as vscode from 'vscode'
 import { extensionName, pasteCommand } from './core/constant'
 import { Logger } from './core/logger'

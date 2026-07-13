@@ -1,3 +1,9 @@
+/**
+ * Post-insert selection helpers.
+ *
+ * After the template text is inserted, select the generated alt or link text
+ * so the user can edit it immediately.
+ */
 export interface TextRange {
   start: number
   end: number

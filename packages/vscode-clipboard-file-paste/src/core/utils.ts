@@ -6,6 +6,7 @@ import dayjs from 'dayjs'
 import sanitize from 'sanitize-filename'
 
 const RID_CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+/** Placeholders expanded later in `replaceTemplatePlaceholders`, not by `parseReplacer`. */
 const RESERVED_PLACEHOLDERS = new Set(['dirname', 'filename', 'altText'])
 
 export interface ParseReplacerOptions {
@@ -17,10 +18,17 @@ export function isHttpURL(url: string): boolean {
   return url.startsWith('http://') || url.startsWith('https://')
 }
 
+/** Returns true for Unix-style relative or home paths. */
 export function isLocalFilePath(filePath: string): boolean {
   return filePath.startsWith('/') || filePath.startsWith('~') || filePath.startsWith('.')
 }
 
+/**
+ * Heuristic check for clipboard text that should be treated as a file path.
+ *
+ * Covers `file://` URLs, absolute paths, home-relative paths, and simple
+ * relative paths that include a file extension.
+ */
 export function looksLikeFilePath(text: string): boolean {
   if (text.startsWith('file://')) {
     return true
@@ -45,6 +53,7 @@ export function looksLikeFilePath(text: string): boolean {
   return false
 }
 
+/** Reject `dirname` values that would escape the save base directory. */
 export function assertSafeDirname(dirname: string): void {
   const segments = dirname.replace(/\\/g, '/').split('/')
   if (segments.includes('..')) {
@@ -82,6 +91,7 @@ export function resolveLocalFilePath(text: string, baseDir: string): string {
   return path.resolve(baseDir, text)
 }
 
+/** Append `extension` when the configured filename has no extension yet. */
 export function ensureExtension(filename: string, extension: string): string {
   if (!extension || path.extname(filename)) {
     return filename
@@ -90,6 +100,11 @@ export function ensureExtension(filename: string, extension: string): string {
   return `${filename}.${extension}`
 }
 
+/**
+ * Substitute resolved path and alt-text values into the configured template.
+ *
+ * Handles Markdown image syntax via the special `![altText]` token.
+ */
 export function replaceTemplatePlaceholders(
   template: string,
   values: Record<string, string>,
@@ -105,10 +120,12 @@ export function replaceTemplatePlaceholders(
     .replaceAll('[altText]', altText)
 }
 
+/** Normalize directory separators and strip trailing slashes. */
 export function normalizeDirname(dirname: string): string {
   return dirname.replace(/\\/g, '/').replace(/\/+$/, '')
 }
 
+/** Generate a random alphanumeric string of the given length. */
 export function generateRid(length: number, random: () => number = Math.random): string {
   let result = ''
 
@@ -120,7 +137,12 @@ export function generateRid(length: number, random: () => number = Math.random):
   return result
 }
 
-/** Replace date and RID placeholders in a configured path or filename string. */
+/**
+ * Replace date and RID placeholders in a configured path or filename string.
+ *
+ * Date tokens use dayjs format strings inside `[...]`. Identical placeholders
+ * in one paste resolve to the same generated value.
+ */
 export function parseReplacer(str: string, options: ParseReplacerOptions = {}): string {
   const now = options.now ?? dayjs()
   const random = options.random ?? Math.random
@@ -162,7 +184,7 @@ export function parseReplacer(str: string, options: ParseReplacerOptions = {}): 
   return result
 }
 
-/* sanitize the full path, invalid characters will be replaced with `_` */
+/** Sanitize each path segment; invalid characters are replaced with `_`. */
 export function sanitizeFullPath(fullPath: string) {
   return fullPath
     .replace(/\\/g, '/')
@@ -180,7 +202,7 @@ function extensionFromPathname(pathname: string): string {
   return path.extname(pathname).slice(1)
 }
 
-/* get file extension from relative path, file:// URL, or http(s) URL */
+/** Extract a file extension from a local path, `file://` URL, or HTTP(S) URL. */
 export function getFileExtension(filePath: string): string {
   if (isHttpURL(filePath)) {
     try {

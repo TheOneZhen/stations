@@ -8,6 +8,12 @@ export interface DownloadedResource {
   contentType: string | null
 }
 
+/**
+ * Download a clipboard HTTP(S) URL with timeout and size limits.
+ *
+ * Streams the response when possible so oversized payloads are rejected
+ * before the full body is buffered.
+ */
 export async function downloadUrl(
   url: string,
   options: {

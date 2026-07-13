@@ -38,6 +38,12 @@ import {
 
 export type { LanguageTemplate, PasteContext } from './types'
 
+/**
+ * Core paste workflow.
+ *
+ * Reads clipboard content, saves it beside the active document using language
+ * templates from settings, and inserts a formatted reference at the cursor.
+ */
 export class Paster {
   /** Entry point: paste clipboard content into the active editor. */
   async paste() {
@@ -51,10 +57,12 @@ export class Paster {
   }
 
   /**
-   * Read clipboard content, save it to the configured path, and insert the template text.
+   * Route clipboard content to the appropriate save handler.
    *
-   * VS Code only exposes text via `readText()`. When that returns empty, the clipboard may
-   * still hold image binary data (e.g. a screenshot), which is handled by a platform shell script.
+   * Priority:
+   * 1. Empty text → clipboard image binary (platform shell script)
+   * 2. HTTP(S) URL → download
+   * 3. Everything else → local file path, image data URL/SVG, or plain text
    */
   async schedule(editor: vscode.TextEditor) {
     const rawClipboardText = await vscode.env.clipboard.readText()
@@ -81,6 +89,7 @@ export class Paster {
     }
   }
 
+  /** Download a remote resource and save it using the active language template. */
   private async pasteHttpUrl(editor: vscode.TextEditor, url: string): Promise<string | undefined> {
     const { buffer, contentType } = await downloadUrl(url)
     const fileExtension = getFileExtension(url)
@@ -92,6 +101,11 @@ export class Paster {
     return this.buildTemplateFromSavedPath(context, savedPath)
   }
 
+  /**
+   * Handle non-empty clipboard text.
+   *
+   * Tries, in order: existing local file copy, image data URL or raw SVG, plain text save.
+   */
   private async pasteClipboardText(editor: vscode.TextEditor, clipboardText: string): Promise<string | undefined> {
     const baseDir = this.getSaveBaseDir(editor)
 
@@ -122,6 +136,12 @@ export class Paster {
     return this.buildTemplateFromSavedPath(context, savedPath)
   }
 
+  /**
+   * Read a clipboard image through a platform shell script.
+   *
+   * VS Code only exposes clipboard text, so binary image data is captured to a
+   * temp file first and then copied into the workspace through `workspace.fs`.
+   */
   private async pasteClipboardImage(editor: vscode.TextEditor): Promise<string | undefined> {
     const context = this.getPasteInfo(editor, 'png')
     const savedPath = await this.resolveCollisionFreePath(context.filePath)
@@ -188,6 +208,7 @@ export class Paster {
     }
   }
 
+  /** Rebuild the insert template using the final saved file name (after collision handling). */
   buildTemplateFromSavedPath(context: PasteContext, savedPath: string): string {
     const savedFilename = path.basename(savedPath)
 
@@ -198,6 +219,7 @@ export class Paster {
     })
   }
 
+  /** Load the template for `languageId`, falling back to `markdown`. */
   private getLanguageTemplate(languageId: string): LanguageTemplate {
     const templates = vscode.workspace
       .getConfiguration(commandPrefix)
@@ -218,6 +240,12 @@ export class Paster {
       .get<string>('defaultTextExtension') ?? 'txt'
   }
 
+  /**
+   * Directory used to resolve relative `dirname` values.
+   *
+   * Saved files are placed next to the active document. Untitled files use
+   * the first workspace folder as the base.
+   */
   private getSaveBaseDir(editor: vscode.TextEditor): string {
     const isUntitled = editor.document.uri.scheme === 'untitled'
 
@@ -351,7 +379,7 @@ export class Paster {
     return undefined
   }
 
-  /** Replace the current editor selection with the resolved template text. */
+  /** Insert template text at the selection and select the generated alt/link text when possible. */
   async replaceUserSelection(editor: vscode.TextEditor, template: string, languageId: string) {
     const insertStart = editor.selection.start
     const success = await editor.edit((editBuilder) => {

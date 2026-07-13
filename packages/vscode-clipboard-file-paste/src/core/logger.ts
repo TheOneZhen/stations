@@ -1,10 +1,11 @@
 import dayjs from 'dayjs'
 import * as vscode from 'vscode'
 
+/** Thin wrapper around the VS Code output channel and notification APIs. */
 export class Logger {
   static channel: vscode.OutputChannel
 
-  static log(message: any) {
+  static log(message: unknown): void {
     if (this.channel) {
       const time = dayjs().format('MM-DD HH:mm:ss')
       this.channel.appendLine(`[${time}] ${message}`)

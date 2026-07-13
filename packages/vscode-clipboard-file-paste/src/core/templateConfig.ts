@@ -7,6 +7,7 @@ export class TemplateConfigError extends Error {
   }
 }
 
+/** Validate and normalize a single language entry from `clipboardFilePaste.templates`. */
 export function validateLanguageTemplate(value: unknown, languageId: string): LanguageTemplate {
   if (!value || typeof value !== 'object') {
     throw new TemplateConfigError(`Invalid template config for language "${languageId}"`)

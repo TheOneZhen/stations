@@ -1,6 +1,5 @@
 import process from 'node:process'
 import esbuild from 'esbuild'
-import { syncContributes } from './scripts/sync-contributes.mjs'
 
 const watch = process.argv.includes('--watch')
 
@@ -16,17 +15,12 @@ const ctx = await esbuild.context({
   minify: false,
 })
 
-async function buildExtension() {
-  await ctx.rebuild()
-  await syncContributes()
-}
-
 if (watch) {
-  await buildExtension()
+  await ctx.rebuild()
   await ctx.watch()
   console.log('Watching for changes...')
 }
 else {
-  await buildExtension()
+  await ctx.rebuild()
   await ctx.dispose()
 }

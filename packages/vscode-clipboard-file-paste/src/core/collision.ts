@@ -1,3 +1,9 @@
+/**
+ * Filename collision handling.
+ *
+ * When the target path already exists, append `-1`, `-2`, and so on
+ * before the file extension until a free name is found.
+ */
 import path from 'node:path'
 
 export const MAX_COLLISION_ATTEMPTS = 100
@@ -17,7 +23,7 @@ export function* buildCollisionCandidates(filePath: string): Generator<string> {
   }
 }
 
-/** Return the first path that does not already exist. */
+/** Return the first path for which `pathExists` returns false. */
 export async function resolveAvailablePath(
   filePath: string,
   pathExists: (candidate: string) => boolean | Promise<boolean>,
