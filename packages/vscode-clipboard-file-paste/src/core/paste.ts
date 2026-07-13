@@ -95,6 +95,7 @@ export class Paster {
       // if clipboard is empty, maybe it's image
 
     }
+    await this.replaceUserSelection(editor, template)
   }
 
   writeFile(filePath: string, data: Buffer) {
@@ -164,6 +165,12 @@ export class Paster {
     })
     shell.stdout.on('data', (data: Buffer) => {
       callback(filePath, data)
+    })
+  }
+
+  async replaceUserSelection(editor: vscode.TextEditor, template: string) {
+    await editor.edit((editBuilder) => {
+      editBuilder.replace(editor.selection, template)
     })
   }
 }
