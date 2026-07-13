@@ -37,4 +37,10 @@ describe('resolveAvailablePath', () => {
     const result = await resolveAvailablePath('/tmp/new.png', async () => false)
     expect(result).toBe('/tmp/new.png')
   })
+
+  it('throws after the maximum number of collision attempts', async () => {
+    await expect(
+      resolveAvailablePath('/tmp/a.png', async () => true, 3),
+    ).rejects.toThrow('after 3 attempts')
+  })
 })

@@ -8,5 +8,6 @@ vitest.config.ts
 node_modules/**
 **/*.ts
 **/*.map
+dist/.constant.cjs
 .gitignore
 pnpm-lock.yaml

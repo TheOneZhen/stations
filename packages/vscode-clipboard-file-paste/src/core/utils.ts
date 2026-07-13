@@ -26,15 +26,30 @@ export function looksLikeFilePath(text: string): boolean {
     return true
   }
 
-  if (path.isAbsolute(text)) {
+  if (path.isAbsolute(text) || /^[a-z]:[\\/]/i.test(text)) {
     return true
   }
 
-  if (isLocalFilePath(text)) {
+  if (text.startsWith('./') || text.startsWith('../') || text.startsWith('~/')) {
     return true
   }
 
-  return /^[a-z]:[\\/]/i.test(text)
+  if (text.startsWith('~')) {
+    return true
+  }
+
+  if ((text.includes('/') || text.includes('\\')) && path.extname(text)) {
+    return true
+  }
+
+  return false
+}
+
+export function assertSafeDirname(dirname: string): void {
+  const segments = dirname.replace(/\\/g, '/').split('/')
+  if (segments.includes('..')) {
+    throw new Error('dirname must not contain ".." segments')
+  }
 }
 
 /** Resolve a clipboard file path relative to the current editor directory. */
@@ -218,6 +233,15 @@ function extensionFromMimeType(mimeType: string): string {
   }
   const subtype = normalized.split('/')[1] ?? ''
   return subtype.replace(/^x-/, '').replace(/\+xml$/, '')
+}
+
+export function extensionFromContentType(contentType: string | null | undefined): string {
+  if (!contentType) {
+    return ''
+  }
+
+  const mimeType = contentType.split(';')[0]?.trim() ?? ''
+  return extensionFromMimeType(mimeType)
 }
 
 /** Parse an image data URL into a buffer and file extension. Returns null for non-image or invalid input. */

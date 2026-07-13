@@ -46,9 +46,10 @@ describe('looksLikeFilePath', () => {
     expect(looksLikeFilePath('C:\\images\\a.png')).toBe(true)
   })
 
-  it('rejects plain text', () => {
+  it('rejects plain text and dotted identifiers', () => {
     expect(looksLikeFilePath('hello world')).toBe(false)
     expect(looksLikeFilePath('data:image/png;base64,abc')).toBe(false)
+    expect(looksLikeFilePath('.class')).toBe(false)
   })
 })
 

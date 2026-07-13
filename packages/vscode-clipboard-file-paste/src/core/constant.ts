@@ -4,7 +4,7 @@ export const pasteCommand = `${commandPrefix}.paste`
 export const pasteCommandTitle = 'Paste Clipboard File'
 export const pasteCommandTemplates = `${commandPrefix}.templates`
 
-/* Extension contributes. It will be built and move in dist package.json */
+/* Extension manifest (commands, keybindings, configuration). Synced into package.json on compile. */
 export const contributes = {
   /* Extension commands */
   commands: [
@@ -50,9 +50,10 @@ export const contributes = {
             dirname: '.',
             filename: '[YYYY-MM-DD-HH-mm-ss]',
             altText: 'description',
-            template: '<head href="[dirname]/[filename]" description="[altText]"></head>',
+            template: '<a href="[dirname]/[filename]">[altText]</a>',
           },
         },
+        markdownDescription: 'Map VS Code `languageId` to paste settings. `dirname` and `filename` support date/RID placeholders. `template` uses `[dirname]`, `[filename]`, and `[altText]` for the inserted reference.',
       },
       [`${commandPrefix}.defaultTextExtension`]: {
         type: 'string',

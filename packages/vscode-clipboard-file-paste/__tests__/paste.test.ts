@@ -6,6 +6,37 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vscode from 'vscode'
 import { Paster } from '../src/core/paste'
 
+const { createWorkspaceFs, FileType } = vi.hoisted(() => {
+  const FileType = {
+    File: 1,
+    Directory: 2,
+  }
+
+  return {
+    FileType,
+    createWorkspaceFs: () => ({
+      stat: async (uri: { fsPath: string }) => {
+        const stat = fs.statSync(uri.fsPath)
+        return {
+          type: stat.isDirectory() ? FileType.Directory : FileType.File,
+          size: stat.size,
+        }
+      },
+      writeFile: async (uri: { fsPath: string }, data: Uint8Array) => {
+        fs.mkdirSync(path.dirname(uri.fsPath), { recursive: true })
+        fs.writeFileSync(uri.fsPath, Buffer.from(data))
+      },
+      readFile: async (uri: { fsPath: string }) => fs.readFileSync(uri.fsPath),
+      createDirectory: async (uri: { fsPath: string }) => {
+        fs.mkdirSync(uri.fsPath, { recursive: true })
+      },
+      delete: async (uri: { fsPath: string }) => {
+        fs.rmSync(uri.fsPath, { force: true })
+      },
+    }),
+  }
+})
+
 vi.mock('vscode', () => ({
   env: {
     clipboard: {
@@ -23,17 +54,33 @@ vi.mock('vscode', () => ({
   workspace: {
     workspaceFolders: [{ uri: { fsPath: '/workspace' } }],
     getConfiguration: vi.fn(),
+    fs: createWorkspaceFs(),
+  },
+  FileType,
+  Uri: {
+    file: (value: string) => ({ fsPath: value }),
+  },
+  Selection: class Selection {
+    anchor
+    active
+    constructor(anchor: unknown, active?: unknown) {
+      this.anchor = anchor
+      this.active = active ?? anchor
+    }
   },
 }))
 
 function createEditor(languageId = 'markdown', fileName = '/workspace/docs/readme.md') {
   return {
     document: {
-      uri: { scheme: 'file' },
+      uri: { scheme: 'file', fsPath: fileName },
       fileName,
       languageId,
     },
-    selection: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+    selection: {
+      start: { line: 0, character: 0, translate: (line: number, char: number) => ({ line, character: char }) },
+      end: { line: 0, character: 0 },
+    },
     edit: vi.fn(async (callback: (builder: { replace: ReturnType<typeof vi.fn> }) => void) => {
       callback({ replace: vi.fn() })
       return true
@@ -44,16 +91,16 @@ function createEditor(languageId = 'markdown', fileName = '/workspace/docs/readm
 function mockConfiguration(languageId = 'markdown') {
   const templates = {
     markdown: {
-      dirname: './images/',
+      dirname: '.',
       filename: 'photo',
       altText: 'description',
       template: '![altText]([dirname]/[filename])',
     },
     html: {
-      dirname: './images/',
+      dirname: '.',
       filename: 'photo',
       altText: 'description',
-      template: '<img alt="[altText]" src="[dirname]/[filename]" />',
+      template: '<a href="[dirname]/[filename]">[altText]</a>',
     },
   }
 
@@ -72,7 +119,7 @@ function mockConfiguration(languageId = 'markdown') {
   return templates[languageId as keyof typeof templates]
 }
 
-describe('paster.getPasteInfo', () => {
+describe('Paster.getPasteInfo', () => {
   const paster = new Paster()
 
   beforeEach(() => {
@@ -85,9 +132,9 @@ describe('paster.getPasteInfo', () => {
     const result = paster.getPasteInfo(editor, 'png')
 
     expect(result.filePath).toBe(
-      path.resolve('/workspace/docs', 'images', 'photo.png'),
+      path.resolve('/workspace/docs', 'photo.png'),
     )
-    expect(result.template).toBe('![description](./images/photo.png)')
+    expect(result.template).toBe('![description](./photo.png)')
   })
 
   it('falls back to markdown template for unsupported languages', () => {
@@ -103,9 +150,29 @@ describe('paster.getPasteInfo', () => {
 
     expect(result.filePath.endsWith('.txt')).toBe(true)
   })
+
+  it('rejects dirname values that escape with ..', () => {
+    vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
+      get: vi.fn((key: string) => {
+        if (key === 'templates') {
+          return {
+            markdown: {
+              dirname: '..',
+              filename: 'photo',
+              template: '![altText]([dirname]/[filename])',
+            },
+          }
+        }
+        return 'txt'
+      }),
+    } as unknown as vscode.WorkspaceConfiguration)
+
+    const editor = createEditor()
+    expect(() => paster.getPasteInfo(editor, 'png')).toThrow('dirname must not contain ".."')
+  })
 })
 
-describe('paster.schedule', () => {
+describe('Paster.schedule', () => {
   const paster = new Paster()
   let tempDir = ''
 
@@ -113,7 +180,7 @@ describe('paster.schedule', () => {
     vi.clearAllMocks()
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'paste-test-'))
     mockConfiguration()
-    vi.spyOn(paster, 'saveClipboardImageToFile').mockResolvedValue('')
+    vi.spyOn(paster, 'saveClipboardImageToTemp').mockResolvedValue('')
   })
 
   afterEach(() => {
@@ -127,9 +194,17 @@ describe('paster.schedule', () => {
 
     await paster.schedule(editor)
 
-    const savedFiles = fs.readdirSync(path.join(tempDir, 'images'))
-    expect(savedFiles.some(name => name.endsWith('.txt'))).toBe(true)
+    expect(fs.existsSync(path.join(tempDir, 'photo.txt'))).toBe(true)
     expect(editor.edit).toHaveBeenCalled()
+  })
+
+  it('preserves leading and trailing whitespace in plain text', async () => {
+    const editor = createEditor('markdown', path.join(tempDir, 'readme.md'))
+    vi.mocked(vscode.env.clipboard.readText).mockResolvedValue('  hello  ')
+
+    await paster.schedule(editor)
+
+    expect(fs.readFileSync(path.join(tempDir, 'photo.txt'), 'utf8')).toBe('  hello  ')
   })
 
   it('does not insert a template when clipboard image save fails', async () => {
@@ -150,17 +225,14 @@ describe('paster.schedule', () => {
 
     await paster.schedule(editor)
 
-    const savedFiles = fs.readdirSync(path.join(tempDir, 'images'))
-    const savedPath = path.join(tempDir, 'images', savedFiles[0]!)
+    const savedPath = path.join(tempDir, 'photo.png')
     const savedBytes = fs.readFileSync(savedPath)
 
     expect(Array.from(savedBytes.slice(0, 8))).toEqual(Array.from(pngBytes.slice(0, 8)))
   })
 
   it('uses collision suffix when target file already exists', async () => {
-    const imagesDir = path.join(tempDir, 'images')
-    fs.mkdirSync(imagesDir, { recursive: true })
-    fs.writeFileSync(path.join(imagesDir, 'photo.png'), 'existing')
+    fs.writeFileSync(path.join(tempDir, 'photo.png'), 'existing')
 
     const editor = createEditor('markdown', path.join(tempDir, 'readme.md'))
     const pngBytes = Buffer.from([0x89, 0x50, 0x4E, 0x47])
@@ -170,11 +242,25 @@ describe('paster.schedule', () => {
 
     await paster.schedule(editor)
 
-    expect(fs.existsSync(path.join(imagesDir, 'photo-1.png'))).toBe(true)
+    expect(fs.existsSync(path.join(tempDir, 'photo-1.png'))).toBe(true)
+  })
+
+  it('selects alt text after inserting markdown template', async () => {
+    const editor = createEditor('markdown', path.join(tempDir, 'readme.md'))
+    vi.mocked(vscode.env.clipboard.readText).mockResolvedValue('plain text')
+
+    await paster.schedule(editor)
+
+    expect(editor.selection).toEqual(
+      expect.objectContaining({
+        anchor: { line: 0, character: 2 },
+        active: { line: 0, character: 13 },
+      }),
+    )
   })
 })
 
-describe('paster.writeBuffer', () => {
+describe('Paster.writeBuffer', () => {
   const paster = new Paster()
   let tempDir = ''
 
@@ -197,7 +283,7 @@ describe('paster.writeBuffer', () => {
   })
 })
 
-describe('paster HTTP handling', () => {
+describe('Paster HTTP handling', () => {
   const paster = new Paster()
   let tempDir = ''
 
@@ -219,15 +305,41 @@ describe('paster HTTP handling', () => {
       ok: false,
       status: 404,
       statusText: 'Not Found',
+      headers: { get: () => null },
+      body: null,
     }))
 
     await paster.schedule(editor)
 
     expect(editor.edit).not.toHaveBeenCalled()
   })
+
+  it('uses Content-Type when the URL has no extension', async () => {
+    const editor = createEditor('markdown', path.join(tempDir, 'readme.md'))
+    const pngBytes = Buffer.from([0x89, 0x50, 0x4E, 0x47])
+    vi.mocked(vscode.env.clipboard.readText).mockResolvedValue('https://example.com/image')
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: {
+        get: (name: string) => name === 'content-type' ? 'image/png' : null,
+      },
+      body: null,
+      arrayBuffer: async () => pngBytes.buffer.slice(
+        pngBytes.byteOffset,
+        pngBytes.byteOffset + pngBytes.byteLength,
+      ),
+    }))
+
+    await paster.schedule(editor)
+
+    expect(fs.existsSync(path.join(tempDir, 'photo.png'))).toBe(true)
+  })
 })
 
-describe('paster local file copy', () => {
+describe('Paster local file copy', () => {
   const paster = new Paster()
   let tempDir = ''
 
@@ -252,7 +364,7 @@ describe('paster local file copy', () => {
 
     await paster.schedule(editor)
 
-    expect(fs.existsSync(path.join(tempDir, 'images', 'photo.png'))).toBe(true)
+    expect(fs.existsSync(path.join(tempDir, 'photo.png'))).toBe(true)
     expect(editor.edit).toHaveBeenCalled()
   })
 })

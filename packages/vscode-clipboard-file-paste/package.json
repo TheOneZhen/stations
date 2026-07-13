@@ -17,7 +17,7 @@
     "compile": "node esbuild.config.mjs",
     "watch": "node esbuild.config.mjs --watch",
     "test": "vitest run",
-    "package": "vsce package --no-dependencies"
+    "package": "node esbuild.config.mjs && vsce package --no-dependencies"
   },
   "dependencies": {
     "dayjs": "catalog:",

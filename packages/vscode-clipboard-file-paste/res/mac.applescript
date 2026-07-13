@@ -1,4 +1,4 @@
-property fileTypes : {{«class PNGf», ".png"}}
+property fileTypes : {{«class PNGf», ".png"}, {JPEG picture format, ".jpg"}, {GIF picture format, ".gif"}, {«class PNGf», ".webp"}}
 
 on run argv
   if argv is {} then
