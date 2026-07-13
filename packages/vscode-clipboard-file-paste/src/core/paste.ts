@@ -4,14 +4,13 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
-import { promisify } from 'node:util'
 import * as vscode from 'vscode'
 import { extensionName, pasteCommandTemplates } from './constant'
 import { Logger } from './logger'
 import { getFileExtension, isHttpURL, parseReplacer, sanitizeFullPath } from './utils'
 
 export class Paster {
-  // main paste function
+  /** Entry point: paste clipboard content into the active editor. */
   paste() {
     const editor = vscode.window.activeTextEditor
 
@@ -21,14 +20,22 @@ export class Paster {
     this.schedule(editor)
   }
 
+  /**
+   * Read clipboard content, save it to the configured path, and insert the template text.
+   *
+   * VS Code only exposes text via `readText()`. When that returns empty, the clipboard may
+   * still hold image binary data (e.g. a screenshot), which is handled by a platform shell script.
+   */
   async schedule(editor: vscode.TextEditor) {
-    const clipboardText = await promisify<string>(vscode.env.clipboard.readText)()
+    const clipboardText = await new Promise<string>((resolve) => {
+      vscode.env.clipboard.readText().then(text => resolve(text.trim()))
+    })
     let filePath: string
     let template: string | undefined
 
     if (clipboardText) {
       if (isHttpURL(clipboardText)) {
-        // if clipboard is a http URL, download the file and paste it
+        // HTTP(S) URL: download remote content and save with the URL file extension.
         const response = await fetch(clipboardText)
         const data = await response.arrayBuffer()
         const buffer = Buffer.from(data)
@@ -42,14 +49,14 @@ export class Paster {
           const url = path.resolve(clipboardText)
 
           if (fs.existsSync(url)) {
-            // if the file exists
+            // Local file path: copy the existing file and preserve its extension.
             const fileExtension = getFileExtension(url);
 
             ({ filePath, template } = this.getPasteInfo(editor, fileExtension))
             this.copyFile(url, filePath)
           }
           else {
-            // plain text
+            // Plain text: save as a text file using the default text extension.
             ({ filePath, template } = this.getPasteInfo(editor, ''))
             this.writeFile(filePath, Buffer.from(clipboardText))
           }
@@ -60,22 +67,28 @@ export class Paster {
       }
     }
     else {
-      // if clipboard is empty, maybe it's image
+      // No text in the clipboard; try reading an image via a platform shell script.
       ({ filePath, template } = this.getPasteInfo(editor, 'png'))
       await fs.promises.mkdir(path.dirname(filePath), { recursive: true })
 
       const result = await this.saveClipboardImageToFile(filePath)
       if (!result) {
-        Logger.showInformationMessage('There is not an image in the clipboard.')
         return
       }
     }
+
+    // Skip insertion when an earlier branch failed or the clipboard had no image.
     if (template !== undefined) {
       await this.replaceUserSelection(editor, template)
     }
   }
 
-  /* get paste info */
+  /**
+   * Resolve the absolute save path and the text to insert from workspace templates.
+   *
+   * Placeholders in `dirname`, `filename`, and `altText` are expanded first; the `template`
+   * string then receives the resolved `[dirname]`, `[filename]`, and `[altText]` values.
+   */
   getPasteInfo(editor: vscode.TextEditor, copiedFileExt: string) {
     const isUntitled = editor.document.uri.scheme === 'untitled'
     const projectRootPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
@@ -90,6 +103,7 @@ export class Paster {
     template = template.replace('[dirname]', dirname).replace('[filename]', filename).replace('[altText]', altText)
 
     const filePath = path.resolve(
+      // Untitled documents have no folder; fall back to the workspace root.
       (isUntitled ? projectRootPath : editorFileFolder) ?? '.',
       dirname,
       filename,
@@ -104,6 +118,7 @@ export class Paster {
     }
   }
 
+  /** Write buffer data to disk. */
   writeFile(filePath: string, data: Buffer) {
     fs.writeFile(filePath, data.toString().trim(), (err) => {
       if (err) {
@@ -112,6 +127,7 @@ export class Paster {
     })
   }
 
+  /** Copy an existing file to the destination path. */
   copyFile(src: string, dest: string) {
     fs.copyFile(src, dest, (err) => {
       if (err) {
@@ -120,7 +136,7 @@ export class Paster {
     })
   }
 
-  /* save the clipboard image to the target file path */
+  /** Promise wrapper around {@link readClipboardImage}. */
   saveClipboardImageToFile(filePath: string): Promise<string> {
     return new Promise((resolve) => {
       this.readClipboardImage(filePath, (_filePath, result) => {
@@ -129,7 +145,12 @@ export class Paster {
     })
   }
 
-  /* read clipboard image via shell and save to the target file path */
+  /**
+   * Read a clipboard image through a platform shell script and save it to `filePath`.
+   *
+   * The script writes image bytes directly to `filePath`. Stdout carries only a status string
+   * (saved path, empty string, `no image`, or `no xclip` on Linux).
+   */
   readClipboardImage(filePath: string, callback: (filePath: string, result: string) => void) {
     const shell = this.spawnClipboardShell(filePath)
     if (!shell) {
@@ -163,7 +184,11 @@ export class Paster {
     })
   }
 
-  /* spawn the clipboard shell */
+  /**
+   * Spawn a platform-specific process that reads the clipboard image and writes it to `filePath`.
+   *
+   * Scripts live under `res/` relative to the compiled `dist/` output.
+   */
   private spawnClipboardShell(filePath: string): ChildProcessWithoutNullStreams | undefined {
     const platform = process.platform
 
@@ -204,6 +229,7 @@ export class Paster {
     return undefined
   }
 
+  /** Replace the current editor selection with the resolved template text. */
   async replaceUserSelection(editor: vscode.TextEditor, template: string) {
     await editor.edit((editBuilder) => {
       editBuilder.replace(editor.selection, template)
