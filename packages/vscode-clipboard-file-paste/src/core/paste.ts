@@ -56,7 +56,6 @@ export class Paster {
             this.copyFile(url, filePath)
           }
           else {
-            console.log('clipboardText is not a file path', clipboardText);
             // Plain text: save as a text file using the default text extension.
             ({ filePath, template } = this.getPasteInfo(editor, ''))
             this.writeFile(filePath, Buffer.from(clipboardText))
