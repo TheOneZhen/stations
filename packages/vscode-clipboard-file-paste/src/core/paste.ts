@@ -7,7 +7,7 @@ import process from 'node:process'
 import * as vscode from 'vscode'
 import { extensionName, pasteCommandTemplates } from './constant'
 import { Logger } from './logger'
-import { getFileExtension, isHttpURL, parseReplacer, sanitizeFullPath } from './utils'
+import { getFileExtension, isHttpURL, parseImageDataUrl, parseRawSvg, parseReplacer, sanitizeFullPath } from './utils'
 
 export class Paster {
   /** Entry point: paste clipboard content into the active editor. */
@@ -56,9 +56,18 @@ export class Paster {
             this.copyFile(url, filePath)
           }
           else {
-            // Plain text: save as a text file using the default text extension.
-            ({ filePath, template } = this.getPasteInfo(editor, ''))
-            this.writeFile(filePath, Buffer.from(clipboardText))
+            const clipboardImage = parseImageDataUrl(clipboardText) ?? parseRawSvg(clipboardText)
+            if (clipboardImage) {
+              // Data URL or raw SVG: save with the derived image extension.
+              ({ filePath, template } = this.getPasteInfo(editor, clipboardImage.extension))
+              await fs.promises.mkdir(path.dirname(filePath), { recursive: true })
+              await fs.promises.writeFile(filePath, new Uint8Array(clipboardImage.buffer))
+            }
+            else {
+              // Plain text: save as a text file using the default text extension.
+              ({ filePath, template } = this.getPasteInfo(editor, ''))
+              this.writeFile(filePath, Buffer.from(clipboardText))
+            }
           }
         }
         catch (error) {
