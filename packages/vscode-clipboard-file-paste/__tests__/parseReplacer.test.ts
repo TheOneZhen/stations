@@ -26,7 +26,7 @@ describe('parseReplacer', () => {
       random: () => values[index++],
     })
     expect(result).toBe('A2F2')
-    expect(result).toMatch(/^[0-9A-Za-z]{4}$/)
+    expect(result).toMatch(/^[0-9A-Z]{4}$/i)
   })
 
   it('generates RID-5 with mixed case', () => {

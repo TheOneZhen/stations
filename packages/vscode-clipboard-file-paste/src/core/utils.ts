@@ -34,7 +34,7 @@ export function looksLikeFilePath(text: string): boolean {
     return true
   }
 
-  return /^[a-zA-Z]:[\\/]/.test(text)
+  return /^[a-z]:[\\/]/i.test(text)
 }
 
 /** Resolve a clipboard file path relative to the current editor directory. */
@@ -47,7 +47,7 @@ export function resolveLocalFilePath(text: string, baseDir: string): string {
     }
     catch {
       const decoded = decodeURIComponent(fileUrl.pathname)
-      if (/^\/[a-zA-Z]:/.test(decoded)) {
+      if (/^\/[a-z]:/i.test(decoded)) {
         return decoded.slice(1)
       }
       return path.normalize(decoded)
@@ -60,7 +60,7 @@ export function resolveLocalFilePath(text: string, baseDir: string): string {
     return path.resolve(home, relative)
   }
 
-  if (path.isAbsolute(text) || /^[a-zA-Z]:[\\/]/.test(text)) {
+  if (path.isAbsolute(text) || /^[a-z]:[\\/]/i.test(text)) {
     return path.normalize(text)
   }
 

@@ -1,5 +1,4 @@
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { buildCollisionCandidates, resolveAvailablePath } from '../src/core/collision'
 
@@ -29,9 +28,8 @@ describe('resolveAvailablePath', () => {
       initialPath,
       path.join('/tmp', 'a-1.png'),
     ])
-    const result = await resolveAvailablePath(initialPath, async (candidate) =>
-      existing.has(candidate),
-    )
+    const result = await resolveAvailablePath(initialPath, async candidate =>
+      existing.has(candidate))
     expect(result).toBe(path.join('/tmp', 'a-2.png'))
   })
 

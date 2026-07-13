@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -71,7 +72,7 @@ function mockConfiguration(languageId = 'markdown') {
   return templates[languageId as keyof typeof templates]
 }
 
-describe('Paster.getPasteInfo', () => {
+describe('paster.getPasteInfo', () => {
   const paster = new Paster()
 
   beforeEach(() => {
@@ -104,7 +105,7 @@ describe('Paster.getPasteInfo', () => {
   })
 })
 
-describe('Paster.schedule', () => {
+describe('paster.schedule', () => {
   const paster = new Paster()
   let tempDir = ''
 
@@ -173,7 +174,7 @@ describe('Paster.schedule', () => {
   })
 })
 
-describe('Paster.writeBuffer', () => {
+describe('paster.writeBuffer', () => {
   const paster = new Paster()
   let tempDir = ''
 
@@ -196,7 +197,7 @@ describe('Paster.writeBuffer', () => {
   })
 })
 
-describe('Paster HTTP handling', () => {
+describe('paster HTTP handling', () => {
   const paster = new Paster()
   let tempDir = ''
 
@@ -226,7 +227,7 @@ describe('Paster HTTP handling', () => {
   })
 })
 
-describe('Paster local file copy', () => {
+describe('paster local file copy', () => {
   const paster = new Paster()
   let tempDir = ''
 
