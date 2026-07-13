@@ -17,46 +17,14 @@ export class Paster {
 
     if (!editor)
       throw new Error('No active editor')
-    // get selection text and replace it
-    const selectText = editor.document.getText(editor.selection)
-    if (selectText) {
-      // todo
-    }
-  }
 
-  /* get paste info */
-  getPasteInfo(editor: vscode.TextEditor, copiedFileExt: string) {
-    const isUntitled = editor.document.uri.scheme === 'untitled'
-    const projectRootPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
-    const editorFileFolder = path.dirname(editor.document.fileName)
-    const editorFileLanguageId = editor.document.languageId
-    const configuration = vscode.workspace.getConfiguration(pasteCommandTemplates)[editorFileLanguageId]
-    let { dirname, filename, altText, template } = configuration.get(editorFileLanguageId)
-
-    dirname = sanitizeFullPath(parseReplacer(dirname))
-    filename = sanitizeFullPath(parseReplacer(`${filename}.${copiedFileExt}`))
-    altText = parseReplacer(altText)
-    template = template.replace('[dirname]', dirname).replace('[filename]', filename).replace('[altText]', altText)
-
-    const filePath = path.resolve(
-      (isUntitled ? projectRootPath : editorFileFolder) ?? '.',
-      dirname,
-      filename,
-    )
-
-    if (!filePath)
-      throw new Error('Failed to get paste info')
-
-    return {
-      filePath,
-      template,
-    }
+    this.schedule(editor)
   }
 
   async schedule(editor: vscode.TextEditor) {
     const clipboardText = await promisify<string>(vscode.env.clipboard.readText)()
     let filePath: string
-    let template: string
+    let template: string | undefined
 
     if (clipboardText) {
       if (isHttpURL(clipboardText)) {
@@ -93,9 +61,47 @@ export class Paster {
     }
     else {
       // if clipboard is empty, maybe it's image
+      ({ filePath, template } = this.getPasteInfo(editor, 'png'))
+      await fs.promises.mkdir(path.dirname(filePath), { recursive: true })
 
+      const result = await this.saveClipboardImageToFile(filePath)
+      if (!result) {
+        Logger.showInformationMessage('There is not an image in the clipboard.')
+        return
+      }
     }
-    await this.replaceUserSelection(editor, template)
+    if (template !== undefined) {
+      await this.replaceUserSelection(editor, template)
+    }
+  }
+
+  /* get paste info */
+  getPasteInfo(editor: vscode.TextEditor, copiedFileExt: string) {
+    const isUntitled = editor.document.uri.scheme === 'untitled'
+    const projectRootPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+    const editorFileFolder = path.dirname(editor.document.fileName)
+    const editorFileLanguageId = editor.document.languageId
+    const configuration = vscode.workspace.getConfiguration(pasteCommandTemplates)[editorFileLanguageId]
+    let { dirname, filename, altText, template } = configuration.get(editorFileLanguageId)
+
+    dirname = sanitizeFullPath(parseReplacer(dirname))
+    filename = sanitizeFullPath(parseReplacer(`${filename}.${copiedFileExt}`))
+    altText = parseReplacer(altText)
+    template = template.replace('[dirname]', dirname).replace('[filename]', filename).replace('[altText]', altText)
+
+    const filePath = path.resolve(
+      (isUntitled ? projectRootPath : editorFileFolder) ?? '.',
+      dirname,
+      filename,
+    )
+
+    if (!filePath)
+      throw new Error('Failed to get paste info')
+
+    return {
+      filePath,
+      template,
+    }
   }
 
   writeFile(filePath: string, data: Buffer) {
@@ -114,20 +120,62 @@ export class Paster {
     })
   }
 
-  /* read clipboard file and return the file path and data */
-  readClipboardFile(filePath: string, callback: (filePath: string, data: Buffer) => void) {
+  /* save the clipboard image to the target file path */
+  saveClipboardImageToFile(filePath: string): Promise<string> {
+    return new Promise((resolve) => {
+      this.readClipboardImage(filePath, (_filePath, result) => {
+        resolve(result)
+      })
+    })
+  }
+
+  /* read clipboard image via shell and save to the target file path */
+  readClipboardImage(filePath: string, callback: (filePath: string, result: string) => void) {
+    const shell = this.spawnClipboardShell(filePath)
+    if (!shell) {
+      callback(filePath, '')
+      return
+    }
+
+    const chunks: Buffer[] = []
+
+    shell.on('error', (error: NodeJS.ErrnoException) => {
+      if (error.code === 'ENOENT') {
+        Logger.showErrorMessage(`Cannot find the shell: ${error.message}`)
+      }
+      else {
+        Logger.showErrorMessage(error.message)
+      }
+      Logger.log(`[${extensionName}] ${error.stack}`)
+      callback(filePath, '')
+    })
+    shell.stdout.on('data', (data: Buffer) => {
+      chunks.push(data)
+    })
+    shell.on('close', () => {
+      const result = Buffer.concat(chunks as Uint8Array[]).toString().trim()
+      if (result === 'no xclip') {
+        Logger.showInformationMessage('You need to install xclip command first.')
+        callback(filePath, '')
+        return
+      }
+      callback(filePath, result)
+    })
+  }
+
+  /* spawn the clipboard shell */
+  private spawnClipboardShell(filePath: string): ChildProcessWithoutNullStreams | undefined {
     const platform = process.platform
-    let shell: ChildProcessWithoutNullStreams
 
     if (platform === 'win32') {
-      const scriptPath = path.join(__dirname, '../../res/pc.ps1')
+      const scriptPath = path.join(__dirname, '../res/pc.ps1')
       let command = 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe'
       const powershellExisted = fs.existsSync(command)
 
       if (!powershellExisted) {
         command = 'powershell'
       }
-      shell = spawn(command, [
+      return spawn(command, [
         '-noprofile',
         '-noninteractive',
         '-nologo',
@@ -141,31 +189,19 @@ export class Paster {
         filePath,
       ])
     }
-    else if (platform === 'darwin') {
-      const ascriptPath = path.join(__dirname, '../../res/mac.applescript')
 
-      shell = spawn('osascript', [ascriptPath, filePath])
-    }
-    else if (platform === 'linux') {
-      const scriptPath = path.join(__dirname, '../../res/linux.sh')
-      shell = spawn('sh', [scriptPath, filePath])
-    }
-    else {
-      return void 0
+    if (platform === 'darwin') {
+      const ascriptPath = path.join(__dirname, '../res/mac.applescript')
+      return spawn('osascript', [ascriptPath, filePath])
     }
 
-    shell.on('error', (error: NodeJS.ErrnoException) => {
-      if (error.code === 'ENOENT') {
-        Logger.showErrorMessage(`Cannot find the shell: ${error.message}`)
-      }
-      else {
-        Logger.showErrorMessage(error.message)
-      }
-      Logger.log(`[${extensionName}] ${error.stack}`)
-    })
-    shell.stdout.on('data', (data: Buffer) => {
-      callback(filePath, data)
-    })
+    if (platform === 'linux') {
+      const scriptPath = path.join(__dirname, '../res/linux.sh')
+      return spawn('sh', [scriptPath, filePath])
+    }
+
+    Logger.log(`[${extensionName}] Unsupported platform: ${platform}`)
+    return undefined
   }
 
   async replaceUserSelection(editor: vscode.TextEditor, template: string) {
