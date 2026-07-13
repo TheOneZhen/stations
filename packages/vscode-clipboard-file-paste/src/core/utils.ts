@@ -1,35 +1,152 @@
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import dayjs from 'dayjs'
 import sanitize from 'sanitize-filename'
+
+const RID_CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+const RESERVED_PLACEHOLDERS = new Set(['dirname', 'filename', 'altText'])
+
+export interface ParseReplacerOptions {
+  now?: dayjs.Dayjs
+  random?: () => number
+}
 
 export function isHttpURL(url: string): boolean {
   return url.startsWith('http://') || url.startsWith('https://')
 }
 
-export function isLocalFilePath(path: string): boolean {
-  return path.startsWith('/') || path.startsWith('~') || path.startsWith('.')
+export function isLocalFilePath(filePath: string): boolean {
+  return filePath.startsWith('/') || filePath.startsWith('~') || filePath.startsWith('.')
 }
-// replace the placeholder with the random id or the formatted time
-export function parseReplacer(str: string) {
-  const matched = str.matchAll(/(\[RID-(\d+)\])/gi)
-  // first try to match the random id, if not, then match the time format
-  if (matched) {
-    for (const match of matched) {
-      const num = Number(match[2])
-      if (match[1] && Number.isInteger(num) && num > 0) {
-        const randomId = genRandomId(num)
-        str = str.replace(match[0], randomId)
+
+export function looksLikeFilePath(text: string): boolean {
+  if (text.startsWith('file://')) {
+    return true
+  }
+
+  if (path.isAbsolute(text)) {
+    return true
+  }
+
+  if (isLocalFilePath(text)) {
+    return true
+  }
+
+  return /^[a-zA-Z]:[\\/]/.test(text)
+}
+
+/** Resolve a clipboard file path relative to the current editor directory. */
+export function resolveLocalFilePath(text: string, baseDir: string): string {
+  if (text.startsWith('file://')) {
+    const fileUrl = new URL(text)
+
+    try {
+      return fileURLToPath(fileUrl)
+    }
+    catch {
+      const decoded = decodeURIComponent(fileUrl.pathname)
+      if (/^\/[a-zA-Z]:/.test(decoded)) {
+        return decoded.slice(1)
+      }
+      return path.normalize(decoded)
+    }
+  }
+
+  if (text.startsWith('~')) {
+    const home = process.env.HOME ?? process.env.USERPROFILE ?? ''
+    const relative = text.slice(1).replace(/^[/\\]/, '')
+    return path.resolve(home, relative)
+  }
+
+  if (path.isAbsolute(text) || /^[a-zA-Z]:[\\/]/.test(text)) {
+    return path.normalize(text)
+  }
+
+  return path.resolve(baseDir, text)
+}
+
+export function ensureExtension(filename: string, extension: string): string {
+  if (!extension || path.extname(filename)) {
+    return filename
+  }
+
+  return `${filename}.${extension}`
+}
+
+export function replaceTemplatePlaceholders(
+  template: string,
+  values: Record<string, string>,
+): string {
+  const dirname = normalizeDirname(values.dirname ?? '')
+  const filename = values.filename ?? ''
+  const altText = values.altText ?? ''
+
+  return template
+    .replaceAll('[dirname]', dirname)
+    .replaceAll('[filename]', filename)
+    .replaceAll('![altText]', `![${altText}]`)
+    .replaceAll('[altText]', altText)
+}
+
+export function normalizeDirname(dirname: string): string {
+  return dirname.replace(/\\/g, '/').replace(/\/+$/, '')
+}
+
+export function generateRid(length: number, random: () => number = Math.random): string {
+  let result = ''
+
+  for (let index = 0; index < length; index++) {
+    const charIndex = Math.floor(random() * RID_CHARSET.length)
+    result += RID_CHARSET[charIndex]
+  }
+
+  return result
+}
+
+/** Replace date and RID placeholders in a configured path or filename string. */
+export function parseReplacer(str: string, options: ParseReplacerOptions = {}): string {
+  const now = options.now ?? dayjs()
+  const random = options.random ?? Math.random
+  const ridCache = new Map<string, string>()
+
+  let result = str.replace(/\[RID-(\d+)\s*\]/gi, (match) => {
+    const key = match.toLowerCase()
+
+    if (!ridCache.has(key)) {
+      const length = Number(match.match(/\d+/)?.[0] ?? 0)
+
+      if (Number.isInteger(length) && length > 0) {
+        ridCache.set(key, generateRid(length, random))
       }
     }
-    return str
-  }
-  else {
-    // i can't believe this is working😂
-    return dayjs().format(dayjs().format(str))
-  }
+
+    return ridCache.get(key) ?? match
+  })
+
+  result = result.replace(/\[([^\]]+)\]/g, (match, token: string) => {
+    if (/^RID-\d+\s*$/i.test(token) || RESERVED_PLACEHOLDERS.has(token)) {
+      return match
+    }
+
+    try {
+      const formatted = now.format(token)
+
+      if (formatted && formatted !== token && !formatted.includes('Invalid')) {
+        return formatted.replace(/ /g, '_')
+      }
+    }
+    catch {
+      return match
+    }
+
+    return match
+  })
+
+  return result
 }
+
 /* sanitize the full path, invalid characters will be replaced with `_` */
 export function sanitizeFullPath(fullPath: string) {
   return fullPath
@@ -43,10 +160,7 @@ export function sanitizeFullPath(fullPath: string) {
     })
     .join('/')
 }
-/* generate random id with the length of 6 */
-function genRandomId(length: number = 6) {
-  return Math.random().toString(36).substring(2, 2 + length)
-}
+
 function extensionFromPathname(pathname: string): string {
   return path.extname(pathname).slice(1)
 }

@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { describe, expect, it } from 'vitest'
-import { parseReplacer } from '../src/utils/url'
+import { parseReplacer } from '../src/core/utils'
 
 const fixedNow = dayjs('2026-07-13T03:54:22')
 

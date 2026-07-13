@@ -40,18 +40,17 @@ export const contributes = {
       [pasteCommandTemplates]: {
         type: 'object',
         default: {
-          /// TODO: file type support regular expression
           markdown: {
-            dirname: '.', // default directory
-            filename: '[YYYY-MM-DD-HH-mm-ss]', // default filename
-            altText: 'description', // default alt text
-            template: '![altText]([dirname]/[filename])', // default template
+            dirname: '.',
+            filename: '[YYYY-MM-DD-HH-mm-ss]',
+            altText: 'description',
+            template: '[[altText]]([dirname]/[filename])',
           },
           html: {
             dirname: '.',
             filename: '[YYYY-MM-DD-HH-mm-ss]',
             altText: 'description',
-            template: '<img alt="[altText]" src="[dirname]/[filename]" />',
+            template: '<head href="[dirname]/[filename]" description="[altText]"></head>',
           },
         },
       },

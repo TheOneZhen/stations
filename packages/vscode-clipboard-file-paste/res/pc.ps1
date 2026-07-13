@@ -5,12 +5,12 @@ Add-Type -Assembly PresentationCore
 $img = [Windows.Clipboard]::GetImage()
 
 if ($img -eq $null) {
-  "no image"
+  ""
   Exit 1
 }
 
 if (-not $imagePath) {
-  "no image"
+  ""
   Exit 1
 }
 

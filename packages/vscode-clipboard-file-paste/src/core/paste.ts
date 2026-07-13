@@ -5,19 +5,40 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import * as vscode from 'vscode'
-import { extensionName, pasteCommandTemplates } from './constant'
+import { resolveAvailablePath } from './collision'
+import { commandPrefix, extensionName } from './constant'
 import { Logger } from './logger'
-import { getFileExtension, isHttpURL, parseImageDataUrl, parseRawSvg, parseReplacer, sanitizeFullPath } from './utils'
+import {
+  ensureExtension,
+  getFileExtension,
+  isHttpURL,
+  looksLikeFilePath,
+  normalizeDirname,
+  parseImageDataUrl,
+  parseRawSvg,
+  parseReplacer,
+  replaceTemplatePlaceholders,
+  resolveLocalFilePath,
+  sanitizeFullPath,
+} from './utils'
+
+export interface LanguageTemplate {
+  dirname: string
+  filename: string
+  altText?: string
+  template: string
+}
 
 export class Paster {
   /** Entry point: paste clipboard content into the active editor. */
-  paste() {
+  async paste() {
     const editor = vscode.window.activeTextEditor
 
-    if (!editor)
+    if (!editor) {
       throw new Error('No active editor')
+    }
 
-    this.schedule(editor)
+    await this.schedule(editor)
   }
 
   /**
@@ -27,69 +48,90 @@ export class Paster {
    * still hold image binary data (e.g. a screenshot), which is handled by a platform shell script.
    */
   async schedule(editor: vscode.TextEditor) {
-    const clipboardText = await new Promise<string>((resolve) => {
-      vscode.env.clipboard.readText().then(text => resolve(text.trim()))
-    })
-    let filePath: string
+    const clipboardText = (await vscode.env.clipboard.readText()).trim()
     let template: string | undefined
 
-    if (clipboardText) {
-      if (isHttpURL(clipboardText)) {
-        // HTTP(S) URL: download remote content and save with the URL file extension.
-        const response = await fetch(clipboardText)
-        const data = await response.arrayBuffer()
-        const buffer = Buffer.from(data)
-        const fileExtension = getFileExtension(clipboardText);
-
-        ({ filePath, template } = this.getPasteInfo(editor, fileExtension))
-        this.writeFile(filePath, buffer)
+    try {
+      if (clipboardText) {
+        if (isHttpURL(clipboardText)) {
+          template = await this.pasteHttpUrl(editor, clipboardText)
+        }
+        else {
+          template = await this.pasteClipboardText(editor, clipboardText)
+        }
       }
       else {
-        try {
-          const url = path.resolve(clipboardText)
+        template = await this.pasteClipboardImage(editor)
+      }
 
-          if (fs.existsSync(url)) {
-            // Local file path: copy the existing file and preserve its extension.
-            const fileExtension = getFileExtension(url);
-
-            ({ filePath, template } = this.getPasteInfo(editor, fileExtension))
-            this.copyFile(url, filePath)
-          }
-          else {
-            const clipboardImage = parseImageDataUrl(clipboardText) ?? parseRawSvg(clipboardText)
-            if (clipboardImage) {
-              // Data URL or raw SVG: save with the derived image extension.
-              ({ filePath, template } = this.getPasteInfo(editor, clipboardImage.extension))
-              await fs.promises.mkdir(path.dirname(filePath), { recursive: true })
-              await fs.promises.writeFile(filePath, new Uint8Array(clipboardImage.buffer))
-            }
-            else {
-              // Plain text: save as a text file using the default text extension.
-              ({ filePath, template } = this.getPasteInfo(editor, ''))
-              this.writeFile(filePath, Buffer.from(clipboardText))
-            }
-          }
-        }
-        catch (error) {
-          Logger.showErrorMessage(`Failed to paste file: ${error}`)
-        }
+      if (template) {
+        await this.replaceUserSelection(editor, template)
       }
     }
-    else {
-      // No text in the clipboard; try reading an image via a platform shell script.
-      ({ filePath, template } = this.getPasteInfo(editor, 'png'))
-      await fs.promises.mkdir(path.dirname(filePath), { recursive: true })
+    catch (error) {
+      Logger.showErrorMessage(`Failed to paste file: ${error}`)
+    }
+  }
 
-      const result = await this.saveClipboardImageToFile(filePath)
-      if (!result) {
-        return
+  private async pasteHttpUrl(editor: vscode.TextEditor, url: string): Promise<string | undefined> {
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      throw new Error(`Failed to download ${url}: ${response.status} ${response.statusText}`)
+    }
+
+    const data = await response.arrayBuffer()
+    const buffer = Buffer.from(data)
+    const fileExtension = getFileExtension(url) || this.getDefaultTextExtension()
+
+    const { filePath, template } = this.getPasteInfo(editor, fileExtension)
+    const savedPath = await this.writeBuffer(filePath, buffer)
+
+    return this.adjustTemplateForSavedPath(template, filePath, savedPath)
+  }
+
+  private async pasteClipboardText(editor: vscode.TextEditor, clipboardText: string): Promise<string | undefined> {
+    const baseDir = this.getEditorBaseDir(editor)
+
+    if (looksLikeFilePath(clipboardText)) {
+      const localPath = resolveLocalFilePath(clipboardText, baseDir)
+
+      if (fs.existsSync(localPath)) {
+        const fileExtension = getFileExtension(localPath)
+        const { filePath, template } = this.getPasteInfo(editor, fileExtension)
+        const savedPath = await this.copyFile(localPath, filePath)
+
+        return this.adjustTemplateForSavedPath(template, filePath, savedPath)
       }
     }
 
-    // Skip insertion when an earlier branch failed or the clipboard had no image.
-    if (template !== undefined) {
-      await this.replaceUserSelection(editor, template)
+    const clipboardImage = parseImageDataUrl(clipboardText) ?? parseRawSvg(clipboardText)
+    if (clipboardImage) {
+      const { filePath, template } = this.getPasteInfo(editor, clipboardImage.extension)
+      const savedPath = await this.writeBuffer(filePath, clipboardImage.buffer)
+
+      return this.adjustTemplateForSavedPath(template, filePath, savedPath)
     }
+
+    const textExtension = this.getDefaultTextExtension()
+    const { filePath, template } = this.getPasteInfo(editor, textExtension)
+    const savedPath = await this.writeBuffer(filePath, Buffer.from(clipboardText, 'utf8'))
+
+    return this.adjustTemplateForSavedPath(template, filePath, savedPath)
+  }
+
+  private async pasteClipboardImage(editor: vscode.TextEditor): Promise<string | undefined> {
+    const { filePath, template } = this.getPasteInfo(editor, 'png')
+    const savedPath = await this.resolveCollisionFreePath(filePath)
+
+    await fs.promises.mkdir(path.dirname(savedPath), { recursive: true })
+
+    const result = await this.saveClipboardImageToFile(savedPath)
+    if (!result) {
+      return undefined
+    }
+
+    return this.adjustTemplateForSavedPath(template, filePath, savedPath)
   }
 
   /**
@@ -103,23 +145,30 @@ export class Paster {
     const projectRootPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
     const editorFileFolder = path.dirname(editor.document.fileName)
     const editorFileLanguageId = editor.document.languageId
-    const configuration = vscode.workspace.getConfiguration(pasteCommandTemplates)[editorFileLanguageId]
-    let { dirname, filename, altText, template } = configuration.get(editorFileLanguageId)
+    const languageTemplate = this.getLanguageTemplate(editorFileLanguageId)
+    const defaultTextExtension = this.getDefaultTextExtension()
+    const extension = copiedFileExt || defaultTextExtension
 
-    dirname = sanitizeFullPath(parseReplacer(dirname))
-    filename = sanitizeFullPath(parseReplacer(`${filename}.${copiedFileExt}`))
-    altText = parseReplacer(altText)
-    template = template.replace('[dirname]', dirname).replace('[filename]', filename).replace('[altText]', altText)
+    const dirname = normalizeDirname(sanitizeFullPath(parseReplacer(languageTemplate.dirname)))
+    const filename = sanitizeFullPath(
+      ensureExtension(parseReplacer(languageTemplate.filename), extension),
+    )
+    const altText = parseReplacer(languageTemplate.altText ?? 'description')
+    const template = replaceTemplatePlaceholders(languageTemplate.template, {
+      dirname,
+      filename,
+      altText,
+    })
 
     const filePath = path.resolve(
-      // Untitled documents have no folder; fall back to the workspace root.
       (isUntitled ? projectRootPath : editorFileFolder) ?? '.',
       dirname,
       filename,
     )
 
-    if (!filePath)
+    if (!filePath) {
       throw new Error('Failed to get paste info')
+    }
 
     return {
       filePath,
@@ -127,22 +176,80 @@ export class Paster {
     }
   }
 
-  /** Write buffer data to disk. */
-  writeFile(filePath: string, data: Buffer) {
-    fs.writeFile(filePath, data.toString().trim(), (err) => {
-      if (err) {
-        Logger.showErrorMessage(`Failed to write file: ${err.message}`)
-      }
-    })
+  private getLanguageTemplate(languageId: string): LanguageTemplate {
+    const templates = vscode.workspace
+      .getConfiguration(commandPrefix)
+      .get<Record<string, LanguageTemplate>>('templates') ?? {}
+
+    const languageTemplate = templates[languageId] ?? templates.markdown
+
+    if (!languageTemplate) {
+      throw new Error(`No paste template configured for language "${languageId}"`)
+    }
+
+    return languageTemplate
   }
 
-  /** Copy an existing file to the destination path. */
-  copyFile(src: string, dest: string) {
-    fs.copyFile(src, dest, (err) => {
-      if (err) {
-        Logger.showErrorMessage(`Failed to copy file: ${err.message}`)
-      }
-    })
+  private getDefaultTextExtension(): string {
+    return vscode.workspace
+      .getConfiguration(commandPrefix)
+      .get<string>('defaultTextExtension') ?? 'txt'
+  }
+
+  private getEditorBaseDir(editor: vscode.TextEditor): string {
+    const isUntitled = editor.document.uri.scheme === 'untitled'
+    const projectRootPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+
+    return (isUntitled ? projectRootPath : path.dirname(editor.document.fileName)) ?? '.'
+  }
+
+  private async pathExists(filePath: string): Promise<boolean> {
+    try {
+      await fs.promises.access(filePath)
+      return true
+    }
+    catch {
+      return false
+    }
+  }
+
+  private async resolveCollisionFreePath(filePath: string): Promise<string> {
+    return resolveAvailablePath(filePath, candidate => this.pathExists(candidate))
+  }
+
+  private adjustTemplateForSavedPath(
+    template: string,
+    initialPath: string,
+    savedPath: string,
+  ): string {
+    if (initialPath === savedPath) {
+      return template
+    }
+
+    const oldName = path.basename(initialPath)
+    const newName = path.basename(savedPath)
+
+    return template.replaceAll(oldName, newName)
+  }
+
+  /** Write buffer data to disk and return the final saved path. */
+  async writeBuffer(filePath: string, data: Buffer | Uint8Array): Promise<string> {
+    const savedPath = await this.resolveCollisionFreePath(filePath)
+
+    await fs.promises.mkdir(path.dirname(savedPath), { recursive: true })
+    await fs.promises.writeFile(savedPath, new Uint8Array(data))
+
+    return savedPath
+  }
+
+  /** Copy an existing file to the destination path and return the final saved path. */
+  async copyFile(src: string, dest: string): Promise<string> {
+    const savedPath = await this.resolveCollisionFreePath(dest)
+
+    await fs.promises.mkdir(path.dirname(savedPath), { recursive: true })
+    await fs.promises.copyFile(src, savedPath)
+
+    return savedPath
   }
 
   /** Promise wrapper around {@link readClipboardImage}. */
@@ -158,7 +265,7 @@ export class Paster {
    * Read a clipboard image through a platform shell script and save it to `filePath`.
    *
    * The script writes image bytes directly to `filePath`. Stdout carries only a status string
-   * (saved path, empty string, `no image`, or `no xclip` on Linux).
+   * (saved path, empty string, or `no xclip` on Linux).
    */
   readClipboardImage(filePath: string, callback: (filePath: string, result: string) => void) {
     const shell = this.spawnClipboardShell(filePath)

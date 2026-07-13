@@ -19,10 +19,10 @@ on run argv
       try
         close access myFile
       end try
-      return "no image"
+      return ""
     end try
   else
-    return "no image"
+    return ""
   end if
 end run
 

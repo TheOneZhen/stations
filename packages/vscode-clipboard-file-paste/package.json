@@ -13,58 +13,6 @@
     "vscode": "^1.85.0"
   },
   "activationEvents": [],
-  "contributes": {
-    "commands": [
-      {
-        "command": "clipboardImagePaste.paste",
-        "title": "Paste Clipboard File",
-        "category": "Clipboard Image Paste"
-      }
-    ],
-    "keybindings": [
-      {
-        "command": "clipboardImagePaste.paste",
-        "key": "ctrl+alt+v",
-        "mac": "cmd+alt+v",
-        "when": "editorTextFocus"
-      }
-    ],
-    "menus": {
-      "editor/context": [
-        {
-          "command": "clipboardImagePaste.paste",
-          "group": "1_modification@100",
-          "when": "editorTextFocus"
-        }
-      ]
-    },
-    "configuration": {
-      "title": "Clipboard Image Paste",
-      "properties": {
-        "clipboardImagePaste.templates": {
-          "type": "object",
-          "default": {
-            "markdown": {
-              "dirname": "./images/",
-              "filename": "[YYYY-MM-DD-HH-mm-ss]",
-              "template": "![altText]([dirname]/[filename])"
-            },
-            "html": {
-              "dirname": "./images/",
-              "filename": "[YYYY-MM-DD-HH-mm-ss]",
-              "template": "<img alt=\"altText\" src=\"[dirname]/[filename]\" />"
-            }
-          },
-          "markdownDescription": "Map VS Code `languageId` to paste settings. `dirname` and `filename` support date/RID placeholders. `template` uses `[dirname]` and `[filename]` for the inserted reference."
-        },
-        "clipboardImagePaste.defaultTextExtension": {
-          "type": "string",
-          "default": "txt",
-          "description": "File extension (without dot) used when pasting plain text from the clipboard."
-        }
-      }
-    }
-  },
   "scripts": {
     "compile": "node esbuild.config.mjs",
     "watch": "node esbuild.config.mjs --watch",

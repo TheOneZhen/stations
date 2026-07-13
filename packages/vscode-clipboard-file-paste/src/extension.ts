@@ -1,17 +1,19 @@
 import * as vscode from 'vscode'
 import { extensionName, pasteCommand } from './core/constant'
 import { Logger } from './core/logger'
+import { Paster } from './core/paste'
 
 export function activate(context: vscode.ExtensionContext): void {
-  // create Logger channel
   Logger.channel = vscode.window.createOutputChannel(extensionName)
-  // add Logger channel to context subscriptions
   context.subscriptions.push(Logger.channel)
   Logger.log(`[${extensionName}] activated!`)
+
+  const paster = new Paster()
 
   const dispose = vscode.commands.registerCommand(pasteCommand, async () => {
     try {
       Logger.log(`[${extensionName}] paste command executed!`)
+      await paster.paste()
     }
     catch (error) {
       Logger.showErrorMessage(`[${extensionName}] paste failed: ${error}`)
@@ -20,5 +22,5 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(dispose)
 }
-/// TODO
+
 export function deactivate(): void {}

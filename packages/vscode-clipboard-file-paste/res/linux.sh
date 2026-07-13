@@ -6,5 +6,5 @@ if xclip -selection clipboard -target image/png -o >/dev/null 2>&1; then
   xclip -selection clipboard -target image/png -o >"$1" 2>/dev/null
   echo "$1"
 else
-  echo "no image"
+  echo ""
 fi

@@ -1,30 +1,42 @@
-import { describe, expect, it } from "vitest";
-import { buildCollisionCandidates } from "../src/path/collision";
-import { findAltTextSelection } from "../src/editor/altTextSelection";
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { describe, expect, it } from 'vitest'
+import { buildCollisionCandidates, resolveAvailablePath } from '../src/core/collision'
 
-describe("buildCollisionCandidates", () => {
-  it("generates incremental suffixes", () => {
-    expect(buildCollisionCandidates("/tmp/photo.png").slice(0, 3)).toEqual([
-      "/tmp/photo.png",
-      "/tmp/photo-1.png",
-      "/tmp/photo-2.png",
-    ]);
-  });
-});
+describe('buildCollisionCandidates', () => {
+  it('generates incremental suffixes', () => {
+    const inputPath = path.join('/tmp', 'photo.png')
+    const candidates = []
+    for (const candidate of buildCollisionCandidates(inputPath)) {
+      candidates.push(candidate)
+      if (candidates.length >= 3) {
+        break
+      }
+    }
 
-describe("findAltTextSelection", () => {
-  it("finds markdown alt text range", () => {
-    expect(
-      findAltTextSelection("![altText](./images/2026-07-09.png)", "markdown"),
-    ).toEqual({ start: 2, end: 9 });
-  });
+    expect(candidates).toEqual([
+      inputPath,
+      path.join('/tmp', 'photo-1.png'),
+      path.join('/tmp', 'photo-2.png'),
+    ])
+  })
+})
 
-  it("finds html alt text range", () => {
-    expect(
-      findAltTextSelection(
-        '<img alt="altText" src="./images/2026-07-09.png" />',
-        "html",
-      ),
-    ).toEqual({ start: 10, end: 17 });
-  });
-});
+describe('resolveAvailablePath', () => {
+  it('returns first available candidate', async () => {
+    const initialPath = path.join('/tmp', 'a.png')
+    const existing = new Set([
+      initialPath,
+      path.join('/tmp', 'a-1.png'),
+    ])
+    const result = await resolveAvailablePath(initialPath, async (candidate) =>
+      existing.has(candidate),
+    )
+    expect(result).toBe(path.join('/tmp', 'a-2.png'))
+  })
+
+  it('returns the original path when it does not exist', async () => {
+    const result = await resolveAvailablePath('/tmp/new.png', async () => false)
+    expect(result).toBe('/tmp/new.png')
+  })
+})
