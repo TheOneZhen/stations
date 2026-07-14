@@ -4,11 +4,21 @@
   "displayName": "Clipboard File Paste",
   "version": "0.1.0",
   "description": "Paste clipboard files to a configured path and insert a reference at the cursor.",
+  "author": "zhenisbusy",
   "license": "MIT",
+  "homepage": "https://github.com/zhenisbusy/vscode-clipboard-file-paste",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhenisbusy/vscode-clipboard-file-paste"
+  },
+  "bugs": {
+    "url": "https://github.com/zhenisbusy/vscode-clipboard-file-paste/issues"
+  },
   "categories": [
     "Other"
   ],
   "main": "./dist/extension.js",
+  "icon": "./res/icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -71,7 +81,8 @@
     "compile": "node esbuild.config.mjs",
     "watch": "node esbuild.config.mjs --watch",
     "test": "vitest run",
-    "package": "node esbuild.config.mjs && vsce package --no-dependencies"
+    "package": "node esbuild.config.mjs && vsce package --no-dependencies",
+    "publish": "vsce publish"
   },
   "dependencies": {
     "dayjs": "catalog:",

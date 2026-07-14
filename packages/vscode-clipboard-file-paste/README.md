@@ -31,7 +31,7 @@ Default settings:
 Result:
 
 - Saved file: `./2026-07-13-22-15-30.png`
-- Inserted text: `[description](./2026-07-13-22-15-30.png)`
+- Inserted text: [description]\(./2026-07-13-22-15-30.png)
 - The `description` text is selected for editing
 
 ### HTML example
@@ -44,7 +44,7 @@ Default settings:
 
 Result:
 
-- Inserted text: `<a href="./2026-07-13-22-15-30.png">description</a>`
+- Inserted text: `` `<a href="./2026-07-13-22-15-30.png">description</a>` ``
 - The `description` link text is selected for editing
 
 ## How it works
