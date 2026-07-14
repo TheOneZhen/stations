@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Clipboard File Paste Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-clipboard-file-paste",
+        "${workspaceFolder}/packages/vscode-clipboard-file-paste/test/fixtures/sample.md"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/packages/vscode-clipboard-file-paste/dist/**/*.js"
+      ],
+      "preLaunchTask": "npm: watch - vscode-clipboard-file-paste",
+      "sourceMaps": true
+    }
+  ]
+}

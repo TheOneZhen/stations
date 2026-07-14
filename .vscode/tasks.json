@@ -4,6 +4,7 @@
     {
       "type": "npm",
       "script": "watch",
+      "path": "packages/vscode-clipboard-file-paste/",
       "problemMatcher": {
         "owner": "esbuild",
         "source": "esbuild",
@@ -26,18 +27,8 @@
         "reveal": "never",
         "panel": "shared"
       },
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "label": "npm: watch"
-    },
-    {
-      "type": "npm",
-      "script": "compile",
-      "problemMatcher": [],
       "group": "build",
-      "label": "npm: compile"
+      "label": "npm: watch - vscode-clipboard-file-paste"
     }
   ]
 }
