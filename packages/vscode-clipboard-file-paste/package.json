@@ -1,6 +1,6 @@
 {
   "publisher": "zhenisbusy",
-  "name": "vscode-clipboard-file-paste",
+  "name": "@zhenisbusy/vscode-clipboard-file-paste",
   "displayName": "Clipboard File Paste",
   "version": "0.1.0",
   "private": true,
