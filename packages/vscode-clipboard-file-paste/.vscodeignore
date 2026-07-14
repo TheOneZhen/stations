@@ -2,6 +2,7 @@
 .vscode-test/**
 src/**
 __tests__/**
+test/**
 esbuild.config.mjs
 tsconfig.json
 vitest.config.ts
@@ -9,5 +10,7 @@ node_modules/**
 **/*.ts
 **/*.map
 dist/.constant.cjs
+dist/core/**
 .gitignore
 pnpm-lock.yaml
+*.vsix

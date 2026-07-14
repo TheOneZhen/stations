@@ -82,7 +82,7 @@
     "watch": "node esbuild.config.mjs --watch",
     "test": "vitest run",
     "package": "node esbuild.config.mjs && vsce package --no-dependencies",
-    "publish": "vsce publish"
+    "publish": "node esbuild.config.mjs && vsce publish --no-dependencies"
   },
   "dependencies": {
     "dayjs": "catalog:",
