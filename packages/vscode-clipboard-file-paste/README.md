@@ -195,6 +195,31 @@ pnpm --filter vscode-clipboard-file-paste package
 - `test` runs Vitest unit tests under `__tests__/`
 - `package` builds the extension and produces a `.vsix` file
 
-Press `F5` in this package folder to launch an Extension Development Host. The launch configuration runs `compile` first.
+Press `F5` in this package folder (or use the monorepo root launch config) to launch an Extension Development Host.
 
 When changing commands, keybindings, menus, or settings, edit `contributes` in `package.json` directly.
+
+## Release (Changesets + GitHub Actions)
+
+This package is `private: true` so Changesets versions it and writes `CHANGELOG.md`, but does **not** publish it to npm. CI publishes it to the VS Marketplace with `vsce`.
+
+### One-time setup
+
+1. Create an Azure DevOps PAT with **Marketplace → Manage** (or Publish).
+2. Add repository secret `VSCE_PAT` (GitHub → Settings → Secrets and variables → Actions).
+3. Ensure publisher `zhenisbusy` exists on the Marketplace and the PAT can publish to it. A one-time local publish is fine for the first release:
+
+```bash
+pnpm --filter vscode-clipboard-file-paste run publish
+```
+
+### Everyday flow
+
+1. After code changes, from the repo root: `pnpm changeset` — select `vscode-clipboard-file-paste`, pick major/minor/patch, write a summary.
+2. Merge the feature PR into `master`.
+3. The **Release** workflow opens (or updates) a **Version PR** that bumps `package.json` / `CHANGELOG.md`.
+4. Merge the Version PR. The same workflow runs `pnpm release`, which:
+   - publishes public npm packages as before
+   - if this package’s version changed and tag `vscode-clipboard-file-paste@x.y.z` does not exist yet, runs `vsce publish --no-dependencies` and pushes that tag
+
+Skip Marketplace publish when `VSCE_PAT` is missing or the extension version did not change in the release commit (npm-only releases stay unaffected).

@@ -18,7 +18,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "node scripts/publish-with-npm.mjs",
+    "release": "node scripts/release.mjs",
     "build:stations": "pnpm --filter \"./packages/**\" --if-present run build:station"
   },
   "devDependencies": {
