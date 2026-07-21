@@ -2,7 +2,7 @@
   "publisher": "zhenisbusy",
   "name": "@zhenisbusy/vscode-clipboard-file-paste",
   "displayName": "Clipboard File Paste",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Paste clipboard files to a configured path and insert a reference at the cursor.",
   "author": "zhenisbusy",
