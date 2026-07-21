@@ -1,5 +1,8 @@
 # @zhenisbusy/3d-image-transition
 
+> GitHub: https://github.com/TheOneZhen/stations/tree/master/packages/3d-image-transition
+> demo: https://stations.zhenisbusy.site/3d-image-transition/index.html
+
 A WebGL image transition effect that splits a photo into hundreds of animated tiles, each flying along a cubic Bézier path. Inspired by [this CodePen demo](https://codepen.io/zadvorsky/pen/PNXbGo) by Zadvorsky.
 
 Built with **Three.js** and **GSAP**. Works in plain TypeScript/JavaScript, **React 18**, and **Vue 3**.
@@ -35,13 +38,13 @@ npm install react react-dom
 npm install vue
 ```
 
-| Package    | Required when              |
-| ---------- | -------------------------- |
-| `three`    | Always                     |
-| `gsap`     | Always                     |
-| `react`    | Using the main entry       |
-| `react-dom`| Using the main entry       |
-| `vue`      | Using `@zhenisbusy/3d-image-transition/vue` |
+| Package     | Required when                               |
+| ----------- | ------------------------------------------- |
+| `three`     | Always                                      |
+| `gsap`      | Always                                      |
+| `react`     | Using the main entry                        |
+| `react-dom` | Using the main entry                        |
+| `vue`       | Using `@zhenisbusy/3d-image-transition/vue` |
 
 ## Quick start
 
@@ -169,12 +172,12 @@ const containerRef = useImageTransition({
 
 The `image` prop / option accepts:
 
-| Type     | Example                                      |
-| -------- | -------------------------------------------- |
-| URL      | `'https://example.com/photo.jpg'`            |
-| Data URL | `'data:image/png;base64,...'`                |
-| File     | `input.files[0]` from `<input type="file">`  |
-| Blob     | `await fetch(url).then(r => r.blob())`       |
+| Type     | Example                                     |
+| -------- | ------------------------------------------- |
+| URL      | `'https://example.com/photo.jpg'`           |
+| Data URL | `'data:image/png;base64,...'`               |
+| File     | `input.files[0]` from `<input type="file">` |
+| Blob     | `await fetch(url).then(r => r.blob())`      |
 
 Remote URLs must allow cross-origin access (CORS) when loaded over HTTP(S).
 
@@ -182,34 +185,34 @@ Remote URLs must allow cross-origin access (CORS) when loaded over HTTP(S).
 
 ### `<ImageTransition />` (React & Vue)
 
-| Prop / attribute | Type          | Default | Description                          |
-| ---------------- | ------------- | ------- | ------------------------------------ |
-| `image`          | `ImageSource` | —       | Image to display                     |
-| `width`          | `number`      | `100`   | Slide plane width (world units)      |
-| `height`         | `number`      | `60`    | Slide plane height (world units)     |
-| `autoplay`       | `boolean`     | `true`  | Start animation on mount             |
-| `enableScrub`    | `boolean`     | `true`  | Enable drag-to-scrub interaction     |
-| `className`      | `string`      | —       | CSS class on the host element        |
+| Prop / attribute | Type          | Default | Description                      |
+| ---------------- | ------------- | ------- | -------------------------------- |
+| `image`          | `ImageSource` | —       | Image to display                 |
+| `width`          | `number`      | `100`   | Slide plane width (world units)  |
+| `height`         | `number`      | `60`    | Slide plane height (world units) |
+| `autoplay`       | `boolean`     | `true`  | Start animation on mount         |
+| `enableScrub`    | `boolean`     | `true`  | Enable drag-to-scrub interaction |
+| `className`      | `string`      | —       | CSS class on the host element    |
 
 ### `SceneController`
 
-| Method / option   | Description                                      |
-| ----------------- | ------------------------------------------------ |
-| `SceneController.create(container, options)` | Mount renderer and start animation |
-| `setImage(image)` | Replace the texture at runtime                  |
-| `dispose()`       | Stop animation and free GPU / DOM resources      |
+| Method / option                              | Description                                 |
+| -------------------------------------------- | ------------------------------------------- |
+| `SceneController.create(container, options)` | Mount renderer and start animation          |
+| `setImage(image)`                            | Replace the texture at runtime              |
+| `dispose()`                                  | Stop animation and free GPU / DOM resources |
 
 **`SceneControllerOptions`**
 
-| Option        | Type          | Default | Description                    |
-| ------------- | ------------- | ------- | ------------------------------ |
-| `width`       | `number`      | —       | Slide plane width              |
-| `height`      | `number`      | —       | Slide plane height             |
-| `image`       | `ImageSource` | —       | Initial image                  |
-| `autoplay`    | `boolean`     | `true`  | Auto-start timeline            |
-| `enableScrub` | `boolean`     | `true`  | Mouse / touch scrubbing        |
-| `fov`         | `number`      | `80`    | Camera field of view           |
-| `antialias`   | `boolean`     | `true` when DPR is 1 | WebGL antialiasing |
+| Option        | Type          | Default              | Description             |
+| ------------- | ------------- | -------------------- | ----------------------- |
+| `width`       | `number`      | —                    | Slide plane width       |
+| `height`      | `number`      | —                    | Slide plane height      |
+| `image`       | `ImageSource` | —                    | Initial image           |
+| `autoplay`    | `boolean`     | `true`               | Auto-start timeline     |
+| `enableScrub` | `boolean`     | `true`               | Mouse / touch scrubbing |
+| `fov`         | `number`      | `80`                 | Camera field of view    |
+| `antialias`   | `boolean`     | `true` when DPR is 1 | WebGL antialiasing      |
 
 ### Low-level exports
 
